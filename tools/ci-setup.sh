@@ -3,9 +3,13 @@
 # Roda como root. Pode ser executado mais de uma vez.
 set -euo pipefail
 
-# habilita [multilib] (bloco vem comentado no pacman.conf padrão)
+# habilita [multilib]
+# (a imagem Docker pode não trazer o bloco: nesse caso ele é acrescentado)
 if ! grep -q '^\[multilib\]' /etc/pacman.conf; then
-  sed -i '/^#\[multilib\]/,/^#Include/ s/^#//' /etc/pacman.conf
+  printf '
+[multilib]
+Include = /etc/pacman.d/mirrorlist
+' >> /etc/pacman.conf
 fi
 
 pacman -Syu --noconfirm --needed base-devel git namcap bats shellcheck github-cli
