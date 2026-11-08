@@ -41,7 +41,7 @@ fi
 printf '\n[xinguos]\nSigLevel = Required DatabaseOptional\nServer = %s\n' "$url" >> "$perfil/pacman.conf"
 install -Dm644 "$perfil/pacman.conf" "$air/etc/pacman.conf"
 
-# 3. protótipo do Marco 0 (os.session-select é o gancho oficial do gamescope-session-steam)
+# 3. protótipo do Marco 0 (os-session-select é o gancho oficial do gamescope-session-steam)
 proto="$raiz/marco0/prototipo"
 install -Dm755 "$proto/steamos-session-select" "$air/usr/local/bin/steamos-session-select"
 install -Dm755 "$proto/steamos-session-select" "$air/usr/lib/os-session-select"
