@@ -454,7 +454,152 @@ git commit -m "feat(marco0): roteiro, modelo de resultados e protótipo de troca
 
 ---
 
-### Task 9: [MANUAL — Xingu] Backup e instalação do Arch de teste
+## Adendo de 2026-11-08: Marco 0 em live boot, sem formatar
+
+Pedido do Xingu: testar no PC real **sem formatar**, por uma ISO ao vivo com persistência no Ventoy, e continuar usando essa ISO durante o desenvolvimento.
+
+**Ordem de execução:** Tasks 11 → 12 → 13 → 14 → 10.
+
+A **Task 9 (formatar e instalar) foi adiada para o Plano 2** e não roda neste plano.
+
+**Fatos conferidos:**
+- Ventoy **1.1.17**, que é ≥ 1.1.09, a versão que corrigiu a persistência com ISOs Arch recentes.
+- A partição `D:` é **exFAT** com o rótulo `Ventoy`.
+- O `ventoy.json` atual tem `control` (`VTOY_DEFAULT_SEARCH_ROOT=/isos`) e `theme` (`display_mode=CLI`). **Esses dois precisam ser preservados.**
+- O rótulo de persistência do Arch no Ventoy é `vtoycow`.
+
+**Decisões:**
+- O perfil base é o **`baseline`** do archiso, e não o `releng`, que tem muitas ferramentas de resgate e deixaria a ISO maior.
+- A ISO sai como **artifact do Actions** (`gh run download`), não como asset de release, por causa do limite de 2 GB dos assets.
+- A ISO tem **nome fixo**, `xinguos-teste.iso`, para a persistência continuar ligada a cada build novo.
+- O live usa o kernel `linux`. O módulo NVIDIA é compilado pelo DKMS dentro do `mkarchiso`, e o patch 0001 do driver já liga o modeset por padrão.
+
+### Task 11: gamescope-session no `[xinguos]` + perfil da ISO de teste (`tools/build-iso.sh`)
+
+**Arquivos:**
+- Gerados pelo `sync-aur.sh`: `packages/aur/gamescope-session-git/`, `packages/aur/gamescope-session-steam-git/`
+- Modificar: `packages/ordem.txt` (acrescentar os dois, nessa ordem)
+- Criar: `iso/teste/pacotes.txt`, `iso/teste/airootfs/...` (lista abaixo), `tools/build-iso.sh`, `tests/build-iso.bats`
+- Modificar: `tools/ci-setup.sh` (instalar também o `archiso`)
+
+**Interfaces:**
+- `tools/build-iso.sh <overlay> <dir-saida> [--so-perfil]`, rodado como root. Lê `XINGUOS_REPO_URL` do ambiente (obrigatório). Passos:
+  1. copia `/usr/share/archiso/configs/baseline` para um diretório temporário;
+  2. acrescenta `<overlay>/pacotes.txt` ao `packages.x86_64`;
+  3. copia `<overlay>/airootfs/.` para dentro do `airootfs/` do perfil;
+  4. acrescenta ao `pacman.conf` do perfil os blocos `[multilib]` e `[xinguos]` (`SigLevel = Required DatabaseOptional`, `Server = $XINGUOS_REPO_URL`) e copia esse `pacman.conf` para `airootfs/etc/pacman.conf`;
+  5. copia o protótipo do Marco 0:
+     - `marco0/prototipo/steamos-session-select` → `airootfs/usr/local/bin/`;
+     - `xinguos-escrever-sessao` → `airootfs/usr/local/lib/xinguos/`;
+     - `sudoers-xinguos-prototipo` → `airootfs/etc/sudoers.d/xinguos-prototipo`;
+  6. cria os links simbólicos de systemd (no Linux, não no git):
+     - `display-manager.service` → `sddm.service`;
+     - `multi-user.target.wants/NetworkManager.service`;
+     - `multi-user.target.wants/xinguos-teste-usuario.service`;
+  7. no `profiledef.sh`:
+     - `iso_name="xinguos-teste"`, `iso_label="XINGUOS_TESTE"`, `iso_publisher="XInguOS <https://github.com/Guilherme-XHP/xinguos>"`;
+     - `file_permissions` com `0:0:755` para os dois scripts do protótipo e para `/usr/local/bin/xinguos-teste-usuario`, e `0:0:440` para os dois arquivos de `/etc/sudoers.d/`;
+  8. acrescenta ` cow_spacesize=8G` em toda linha que contém `archisobasedir=` nos arquivos de `grub/`, `syslinux/` e `efiboot/loader/entries/`. Sem persistência, o padrão de 256 MB não aguenta nem o Steam;
+  9. se for `--so-perfil`, imprime o caminho do perfil e para (o perfil fica no disco). Senão, roda `mkarchiso -v -w <tmp>/work -o <dir-saida> <perfil>`, renomeia o resultado para `<dir-saida>/xinguos-teste.iso` e grava `xinguos-teste.iso.sha256`.
+
+  Sai com código ≠ 0 se faltar o `XINGUOS_REPO_URL` ou o `<overlay>/pacotes.txt`.
+
+- **`iso/teste/pacotes.txt`:**
+  - `plasma-desktop sddm plasma-nm plasma-pa kscreen powerdevil konsole dolphin kate firefox xdg-desktop-portal-kde`
+  - `pipewire pipewire-pulse wireplumber networkmanager`
+  - `linux-headers xinguos-keyring nvidia-580xx-dkms nvidia-580xx-utils lib32-nvidia-580xx-utils`
+  - `steam gamescope mangohud lib32-mangohud gamescope-session-git gamescope-session-steam-git`
+  - `git github-cli sudo`
+
+- **Arquivos em `iso/teste/airootfs/`:**
+  - `etc/hostname`: `xinguos-teste`.
+  - `etc/vconsole.conf`: `KEYMAP=br-abnt2`.
+  - `etc/X11/xorg.conf.d/00-keyboard.conf`: `XkbLayout "br"`, `XkbModel "abnt2"`.
+  - `etc/sddm.conf.d/10-xinguos-teste.conf`: `[Autologin]` com `User=xingu`, `Session=plasma.desktop` e `Relogin=true`. O `zz-xinguos-session.conf` do protótipo vem depois na ordem e, por isso, ganha.
+  - `etc/sudoers.d/10-xinguos-teste`: `%wheel ALL=(ALL:ALL) NOPASSWD: ALL`. **Só na ISO de teste.**
+  - `usr/local/bin/xinguos-teste-usuario`: se o usuário `xingu` não existe, roda `useradd -m -G wheel xingu` e `passwd -d xingu`. Se já existe (veio da persistência), não faz nada.
+  - `etc/systemd/system/xinguos-teste-usuario.service`: oneshot, `Before=display-manager.service`, `WantedBy=multi-user.target`.
+
+- [ ] **Passo 1: copiar a gamescope-session do AUR.** Rode `tools/sync-aur.sh gamescope-session-git` e `tools/sync-aur.sh gamescope-session-steam-git`. **Leia os PKGBUILDs inteiros** (é código de terceiros) e acrescente os dois ao `ordem.txt`.
+- [ ] **Passo 2: escrever o `tests/build-iso.bats`**, usando `--so-perfil` e `XINGUOS_REPO_URL=https://exemplo.invalid/repo`. Testes:
+  - `@test "perfil leva os pacotes do XInguOS"`: o `packages.x86_64` contém as linhas `nvidia-580xx-dkms`, `gamescope-session-steam-git` e `plasma-desktop`.
+  - `@test "pacman.conf do perfil e do live têm [multilib] e [xinguos]"`: os dois arquivos contêm `[xinguos]` e `Server = https://exemplo.invalid/repo`.
+  - `@test "protótipo e sudoers entram com permissões"`: o `profiledef.sh` contém `["/usr/local/bin/steamos-session-select"]="0:0:755"` e `["/etc/sudoers.d/xinguos-prototipo"]="0:0:440"`, e os arquivos existem no `airootfs`.
+  - `@test "sddm e usuário habilitados"`: `airootfs/etc/systemd/system/display-manager.service` é um link para `/usr/lib/systemd/system/sddm.service` e existe o link `multi-user.target.wants/xinguos-teste-usuario.service`.
+  - `@test "boot com cow_spacesize"`: toda linha com `archisobasedir=` contém `cow_spacesize=8G`, e há pelo menos uma.
+  - `@test "sem XINGUOS_REPO_URL falha"`: status ≠ 0 e a saída contém `XINGUOS_REPO_URL`.
+- [ ] **Passo 3: push.** Esperado: os 6 testes novos **FALHAM** porque o `build-iso.sh` não existe.
+- [ ] **Passo 4: implementar o `tools/build-iso.sh` e os arquivos do overlay.** Acrescente `archiso` ao `pacman -S` do `ci-setup.sh`.
+- [ ] **Passo 5: push.** Esperado: `testes` verde.
+- [ ] **Passo 6: commit** — `feat(iso): perfil da ISO de teste ao vivo e gamescope-session no [xinguos]`.
+
+### Task 12: `marco0/criar-persistencia.sh` — persistência no Ventoy
+
+**Arquivos:**
+- Criar: `marco0/criar-persistencia.sh`, `tests/criar-persistencia.bats`
+
+**Interfaces:**
+- `marco0/criar-persistencia.sh [--raiz <dir>] [--tamanho <tamanho>]`. Roda **no live da ISO de teste**, como root.
+  - Padrão da `--raiz`: monta a partição de rótulo `Ventoy` (`/dev/disk/by-label/Ventoy`) em `/mnt/ventoy`. Os testes passam uma pasta comum.
+  - Padrão do `--tamanho`: `80G`.
+  - Cria `<raiz>/persistence/xinguos-teste.dat` com `fallocate -l`, caindo para `truncate -s` se o `fallocate` falhar, e formata com `mkfs.ext4 -F -L vtoycow`.
+  - Atualiza o `<raiz>/ventoy/ventoy.json`, **preservando** as chaves existentes. Acrescenta, ou substitui pelo mesmo `image`, a entrada `{"image": "/isos/Linux/xinguos-teste.iso", "backend": "/persistence/xinguos-teste.dat"}` na lista `persistence`. Usa o `python` do live, porque o `jq` não vem na ISO. Antes de mexer, faz backup em `ventoy.json.antes-xinguos`.
+  - Se o `.dat` já existe, recusa (código 1) sem tocar em nada. Recriar apagaria a persistência.
+- Na ISO, o arquivo vai para `/usr/local/bin/criar-persistencia` (`0:0:755`). O `build-iso.sh` copia e o `file_permissions` cobre. Acrescente isso ao Passo 5/7 da Task 11 por meio desta task, com um teste extra no `build-iso.bats`: `@test "criar-persistencia vai pra ISO"`.
+
+- [ ] **Passo 1: escrever os testes** (rodam como root no CI, numa pasta temporária, com `--tamanho 64M`):
+  - `@test "cria imagem ext4 com rótulo vtoycow"`: `e2label <dat>` imprime `vtoycow`.
+  - `@test "preserva control e theme e acrescenta persistence"`: partindo do `ventoy.json` real do Xingu, citado no topo do adendo, o resultado tem `control[0].VTOY_DEFAULT_SEARCH_ROOT == "/isos"`, `theme.display_mode == "CLI"` e `persistence[0].backend == "/persistence/xinguos-teste.dat"`. Checagem com `python -c`.
+  - `@test "rodar duas vezes não duplica nem apaga"`: na segunda execução o status é 1, a lista `persistence` continua com 1 entrada e o `.dat` não muda (mesma data de modificação).
+  - `@test "faz backup do ventoy.json"`: `ventoy.json.antes-xinguos` é igual ao original.
+- [ ] **Passo 2: push.** Esperado: **FALHA** nos testes.
+- [ ] **Passo 3: implementar o script e o teste extra do `build-iso.bats`.** Inclua o script no `shellcheck` do workflow.
+- [ ] **Passo 4: push.** Esperado: verde.
+- [ ] **Passo 5: commit** — `feat(marco0): script de persistência do Ventoy para a ISO de teste`.
+
+### Task 13: Job `iso-teste` no CI
+
+**Arquivos:**
+- Modificar: `.github/workflows/repo.yml`
+- Criar: `tools/confiar-xinguos.sh` (os passos 1 a 3 do README: chave + bloco + keyring). Ele é extraído do `tests/smoke-repo.sh`, que passa a chamá-lo.
+
+**Interfaces:**
+- `tools/confiar-xinguos.sh <url> <fpr>`: os mesmos comandos que hoje estão no smoke, do `pacman-key --init` até `pacman -Sy --noconfirm xinguos-keyring`.
+- Job **`iso-teste`**:
+  - roda só em `workflow_dispatch` com o input booleano `iso` igual a `true`, ou seja `gh workflow run repo.yml --ref <branch> -f iso=true`;
+  - `needs: smoke`, `container: archlinux:latest` com `options: --privileged`;
+  - passos: `ci-setup.sh`, depois `confiar-xinguos.sh`, depois `XINGUOS_REPO_URL=... tools/build-iso.sh iso/teste out-iso`;
+  - verifica com `test -s out-iso/xinguos-teste.iso` e imprime `du -h`;
+  - publica com `actions/upload-artifact@v4`: nome `xinguos-teste-iso`, caminho `out-iso/`, `retention-days: 30`, `compression-level: 0`.
+
+- [ ] **Passo 1: refatorar o smoke para usar o `confiar-xinguos.sh`.** Rode o workflow com `gh workflow run repo.yml --ref plano1`. Esperado: `smoke` continua verde. Esse é o teste da refatoração.
+- [ ] **Passo 2: acrescentar o input `iso` e o job `iso-teste`.** Rode `gh workflow run repo.yml --ref plano1 -f iso=true` e depois `gh run watch`. Esperado: `iso-teste` verde, com o artifact `xinguos-teste-iso` listado em `gh run view <id>`.
+- [ ] **Passo 3: baixar e conferir no Windows.** Rode `gh run download <id> -n xinguos-teste-iso -D <scratch>` e depois `sha256sum -c xinguos-teste.iso.sha256`. Esperado: `OK`. Mova para `D:\isos\Linux\xinguos-teste.iso`.
+- [ ] **Passo 4: commit** — `ci: job iso-teste gera a ISO ao vivo como artifact`.
+
+### Task 14: [MANUAL — Xingu] Primeiro boot ao vivo e persistência
+
+Substitui a Task 9 neste plano.
+
+- [ ] **Passo 1:** No PC, escolha `xinguos-teste.iso` no menu do Ventoy, **sem** persistência (ela ainda não existe). Esperado: o SDDM entra sozinho no Plasma como `xingu`.
+- [ ] **Passo 2:** No Konsole, rode `sudo criar-persistencia` (80 GB; no HD USB leva uns 15 a 25 minutos). Esperado: termina com a linha da entrada do `ventoy.json` e `vtoycow`.
+- [ ] **Passo 3:** Reinicie e escolha a ISO de novo. Agora o Ventoy oferece a persistência: escolha `xinguos-teste.dat`. Para conferir:
+  - crie um arquivo em `~`, reinicie e veja se ele continua lá;
+  - `nvidia-smi` mostra a GTX 1060 com o driver `580.`;
+  - `cat /sys/module/nvidia_drm/parameters/modeset` mostra `Y`;
+  - `echo $XDG_SESSION_TYPE` mostra `wayland`.
+- [ ] **Passo 4:** Rode `gh auth login` e depois `gh repo clone Guilherme-XHP/xinguos`. Siga para a Task 10, rodando os testes no live, com persistência.
+
+  Ajustes da Task 10 no live:
+  - o Steam, o gamescope e a gamescope-session **já vêm na ISO**;
+  - o protótipo **já vem instalado** (pule o `instalar.sh`);
+  - o Kdenlive e o GIMP do item 5 são instalados com `sudo pacman -S` na persistência.
+
+---
+
+### Task 9: [ADIADA para o Plano 2] Backup e instalação do Arch no SSD
+
+Pelo adendo de 2026-11-08, esta task não roda neste plano. Ela fica aqui como referência para o Plano 2.
 
 Este Arch vira a base de uso diário no Plano 2, então ele não é jogado fora.
 
