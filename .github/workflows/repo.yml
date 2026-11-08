@@ -1,0 +1,18 @@
+name: repo
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  testes:
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Preparar ambiente Arch
+        run: bash tools/ci-setup.sh
+      - name: shellcheck
+        run: shellcheck tools/*.sh
+      - name: bats
+        run: bats tests/
