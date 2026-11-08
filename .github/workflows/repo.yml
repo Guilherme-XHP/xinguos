@@ -17,7 +17,35 @@ jobs:
       - name: bats
         run: bats tests/
 
+  build:
+    needs: testes
+    if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Preparar ambiente Arch
+        run: bash tools/ci-setup.sh
+      - name: Importar chave de assinatura
+        env:
+          XINGUOS_GPG_KEY: ${{ secrets.XINGUOS_GPG_KEY }}
+        run: echo "$XINGUOS_GPG_KEY" | gpg --batch --import
+      - name: Compilar e assinar
+        env:
+          XINGUOS_GPG_FPR: ${{ vars.XINGUOS_GPG_FPR }}
+        run: |
+          tools/build-repo.sh packages/ordem.txt packages out
+          cp packages/xinguos/xinguos-keyring/xinguos.gpg out/
+      - name: Publicar na release repo-x86_64
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: tools/publish-release.sh out repo-x86_64
+
   smoke:
+    needs: build
     if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     container: archlinux:latest
