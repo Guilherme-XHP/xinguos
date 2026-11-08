@@ -6,10 +6,7 @@ set -euo pipefail
 # habilita [multilib]
 # (a imagem Docker pode não trazer o bloco: nesse caso ele é acrescentado)
 if ! grep -q '^\[multilib\]' /etc/pacman.conf; then
-  printf '
-[multilib]
-Include = /etc/pacman.d/mirrorlist
-' >> /etc/pacman.conf
+  printf '\n[multilib]\nInclude = /etc/pacman.d/mirrorlist\n' >> /etc/pacman.conf
 fi
 
 pacman -Syu --noconfirm --needed base-devel git namcap bats shellcheck github-cli
