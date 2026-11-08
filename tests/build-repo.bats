@@ -31,12 +31,14 @@ setup_file() {
 @test "sem chave não publica nada" {
   run env XINGUOS_GPG_FPR= tools/build-repo.sh tests/fixtures/ordem-ok.txt tests/fixtures/pacotes "$BATS_TEST_TMPDIR/o"
   [ "$status" -ne 0 ]
+  [[ "$output" == *"XINGUOS_GPG_FPR não definido"* ]]
   [ ! -e "$BATS_TEST_TMPDIR/o/xinguos.db" ]
 }
 
 @test "chave inexistente não publica nada" {
   run env XINGUOS_GPG_FPR=0000000000000000000000000000000000000000 tools/build-repo.sh tests/fixtures/ordem-ok.txt tests/fixtures/pacotes "$BATS_TEST_TMPDIR/o"
   [ "$status" -ne 0 ]
+  [[ "$output" == *"não está no keyring"* ]]
   [ ! -e "$BATS_TEST_TMPDIR/o/xinguos.db" ]
 }
 
