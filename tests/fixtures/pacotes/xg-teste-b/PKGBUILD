@@ -1,0 +1,8 @@
+pkgname=xg-teste-b
+pkgver=1
+pkgrel=1
+pkgdesc="Fixture de teste do build-repo: depende de xg-teste-a"
+arch=(any)
+license=(MIT)
+depends=(xg-teste-a)
+package() { install -d "$pkgdir/usr/share/xg-teste-b"; }
