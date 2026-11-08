@@ -1,2 +1,3 @@
+xinguos/xinguos-keyring
 aur/nvidia-580xx-utils
 aur/lib32-nvidia-580xx-utils

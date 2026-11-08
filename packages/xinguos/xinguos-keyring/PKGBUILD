@@ -1,0 +1,16 @@
+pkgname=xinguos-keyring
+pkgver=20261108
+pkgrel=1
+pkgdesc="Chave de assinatura do repositório [xinguos] do XInguOS"
+arch=(any)
+url="https://github.com/Guilherme-XHP/xinguos"
+license=(GPL-3.0-or-later)
+install=xinguos-keyring.install
+source=(xinguos.gpg xinguos-trusted xinguos-revoked)
+sha256sums=(SKIP SKIP SKIP)
+
+package() {
+  install -Dm644 xinguos.gpg "$pkgdir/usr/share/pacman/keyrings/xinguos.gpg"
+  install -Dm644 xinguos-trusted "$pkgdir/usr/share/pacman/keyrings/xinguos-trusted"
+  install -Dm644 xinguos-revoked "$pkgdir/usr/share/pacman/keyrings/xinguos-revoked"
+}

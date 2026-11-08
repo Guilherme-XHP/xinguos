@@ -6,13 +6,13 @@ Distro pessoal do Xingu, baseada em **Arch Linux puro**: gaming com Gaming Mode 
 
 ## Usar o repositório `[xinguos]` num Arch puro
 
-Fingerprint da chave de assinatura: `__FPR__`
+Fingerprint da chave de assinatura: `71A4F9C98EC5F556F6A0A16784B5DF2CB84BFCD0`
 
 ```bash
 # 1. confiar na chave do XInguOS (compare o fingerprint acima)
 curl -L -o /tmp/xinguos.gpg https://github.com/Guilherme-XHP/xinguos/releases/download/repo-x86_64/xinguos.gpg
 sudo pacman-key --add /tmp/xinguos.gpg
-sudo pacman-key --lsign-key __FPR__
+sudo pacman-key --lsign-key 71A4F9C98EC5F556F6A0A16784B5DF2CB84BFCD0
 ```
 
 ```ini
