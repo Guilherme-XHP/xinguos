@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+# PROTÓTIPO DESCARTÁVEL do Marco 0. Roda como root via sudo (ver sudoers-xinguos-prototipo).
+# Grava qual sessão o SDDM deve abrir no próximo login automático.
+#
+# uso: xinguos-escrever-sessao <sessao.desktop> <usuario>
+set -euo pipefail
+
+uso() { echo "uso: xinguos-escrever-sessao <sessao.desktop> <usuario>" >&2; exit 2; }
+
+[ $# -eq 2 ] || uso
+sessao=$1
+usuario=$2
+
+[[ "$sessao" =~ ^[A-Za-z0-9._-]+\.desktop$ ]] || uso
+if [ ! -f "/usr/share/wayland-sessions/$sessao" ]; then
+  echo "sessão não existe: /usr/share/wayland-sessions/$sessao" >&2
+  exit 2
+fi
+id "$usuario" >/dev/null 2>&1 || uso
+# via sudo, só pode configurar o login automático do próprio usuário
+if [ -n "${SUDO_USER:-}" ] && [ "$usuario" != "$SUDO_USER" ]; then
+  echo "só é permitido escolher a sessão do próprio usuário ($SUDO_USER)" >&2
+  exit 2
+fi
+
+mkdir -p /etc/sddm.conf.d
+cat > /etc/sddm.conf.d/zz-xinguos-session.conf <<CONF
+[Autologin]
+User=$usuario
+Session=$sessao
+Relogin=true
+CONF

@@ -13,6 +13,6 @@ jobs:
       - name: Preparar ambiente Arch
         run: bash tools/ci-setup.sh
       - name: shellcheck
-        run: shellcheck tools/*.sh
+        run: shellcheck tools/*.sh marco0/prototipo/steamos-session-select marco0/prototipo/xinguos-escrever-sessao marco0/prototipo/instalar.sh
       - name: bats
         run: bats tests/

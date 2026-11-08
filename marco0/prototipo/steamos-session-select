@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# PROTÓTIPO DESCARTÁVEL do Marco 0 — a versão definitiva é do xinguos-gaming (Plano 3).
+# Chamado pelo Steam ("Mudar para a Área de Trabalho" → `steamos-session-select plasma`)
+# ou à mão (`steamos-session-select gamescope`) para voltar ao Gaming Mode.
+set -euo pipefail
+
+case "${1:-}" in
+  plasma | desktop) sessao=plasma.desktop ;;
+  gamescope | gaming) sessao=gamescope-session-steam.desktop ;;
+  *)
+    echo "uso: steamos-session-select plasma|gamescope" >&2
+    exit 2
+    ;;
+esac
+
+sudo -n /usr/local/lib/xinguos/xinguos-escrever-sessao "$sessao" "$USER"
+
+# encerra a sessão atual; o SDDM (Relogin=true) entra sozinho na sessão escolhida
+if [ -n "${XDG_SESSION_ID:-}" ]; then
+  loginctl terminate-session "$XDG_SESSION_ID"
+else
+  loginctl terminate-user "$USER"
+fi
