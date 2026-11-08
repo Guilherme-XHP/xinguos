@@ -25,6 +25,19 @@ commit=$(git -C "$tmp/clone" rev-parse HEAD)
 # .git e o .gitignore do repositório AUR (que costuma ignorar "*" e esconderia arquivos do nosso git)
 rm -rf "$tmp/clone/.git" "$tmp/clone/.gitignore"
 
+# pacotes -git: o PKGBUILD do AUR baixa o HEAD do upstream. Com um pin em <raiz>/aur-pins.txt
+# ("<pkgbase> <commit>"), a source fica fixada nesse commit, para nunca assinar código não revisado.
+pin=""
+if [ -f "$raiz/aur-pins.txt" ]; then
+  pin=$(awk -v p="$pkgbase" '$1==p {print $2}' "$raiz/aur-pins.txt")
+fi
+if [ -n "$pin" ]; then
+  [[ "$pin" =~ ^[0-9a-f]{40}$ ]] || die "pin inválido para $pkgbase: $pin"
+  grep -qE 'git\+[^"#]+' "$tmp/clone/PKGBUILD" || die "pin de $pkgbase: PKGBUILD sem source git+ para fixar"
+  sed -i -E "s|(git\+[^\"'# )]+)([\"' )])|\1#commit=$pin\2|" "$tmp/clone/PKGBUILD"
+  grep -qF "#commit=$pin" "$tmp/clone/PKGBUILD" || die "pin de $pkgbase não foi aplicado"
+fi
+
 destino="$raiz/aur/$pkgbase"
 rm -rf "$destino"
 mkdir -p "$destino"
