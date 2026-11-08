@@ -32,10 +32,20 @@ if ! gh release view "$tag" >/dev/null 2>&1; then
     --notes "Repositório pacman do XInguOS. Não baixe à mão: veja o README." --latest=false
 fi
 
-gh release upload "$tag" --clobber "${arquivos[@]}"
+existentes=$(gh release view "$tag" --json assets -q '.assets[].name')
+
+# nome de pacote é imutável: o que já está publicado nunca é reenviado nem sobrescrito
+# (o build-repo reaproveita os mesmos bytes, então o banco novo continua batendo)
+novos=()
+for f in "${arquivos[@]}"; do
+  grep -qxF "$(basename "$f")" <<<"$existentes" || novos+=("$f")
+done
+if [ ${#novos[@]} -gt 0 ]; then
+  gh release upload "$tag" "${novos[@]}"
+fi
 gh release upload "$tag" --clobber "${bancos[@]}"
 
-gh release view "$tag" --json assets -q '.assets[].name' | while IFS= read -r nome; do
+while IFS= read -r nome; do
   [ -n "$nome" ] || continue
   [ -e "$out/$nome" ] || gh release delete-asset "$tag" "$nome" -y
-done
+done <<<"$existentes"

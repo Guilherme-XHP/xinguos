@@ -43,7 +43,6 @@ setup() {
 foo-1-1-any.pkg.tar.zst.sig
 xinguos.db' run tools/publish-release.sh "$D" repo-x86_64
   [ "$status" -eq 0 ]
-  cat "$GH_LOG"
   run grep -E 'upload .*foo-1-1-any\.pkg\.tar\.zst' "$GH_LOG"
   [ "$status" -ne 0 ]
   grep -q 'upload repo-x86_64 --clobber .*xinguos\.db' "$GH_LOG"
