@@ -32,3 +32,21 @@ setup() {
   [[ "$output" == *"sync-aur:"* ]]
   [ "$(cat "$R/aur/nao-existe/PKGBUILD")" = velho ]
 }
+
+@test "não copia o .gitignore do AUR (ele esconderia arquivos do git)" {
+  local trabalho="$BATS_TEST_TMPDIR/trabalho2"
+  git init -q "$trabalho"
+  printf '*
+!PKGBUILD
+!.gitignore
+' > "$trabalho/.gitignore"
+  echo "pkgname=pkg-ign" > "$trabalho/PKGBUILD"
+  echo "post_install() { :; }" > "$trabalho/pkg-ign.install"
+  git -C "$trabalho" add -f -A
+  git -C "$trabalho" -c user.name=t -c user.email=t@t commit -qm inicial
+  git clone -q --bare "$trabalho" "$BATS_TEST_TMPDIR/aur/pkg-ign.git"
+  run tools/sync-aur.sh pkg-ign "$R"
+  [ "$status" -eq 0 ]
+  [ -f "$R/aur/pkg-ign/pkg-ign.install" ]
+  [ ! -e "$R/aur/pkg-ign/.gitignore" ]
+}
