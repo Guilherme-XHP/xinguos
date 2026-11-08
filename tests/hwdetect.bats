@@ -50,7 +50,7 @@ detectar() {
   [ "${lines[0]}" = "perfil=varias" ]
   [ "${lines[1]}" = "pacotes=" ]
   [ "${lines[2]}" = "gaming=compativel" ]
-  [[ "${lines[3]}" == *"--forcar"* ]]
+  [ "${lines[3]}" = "aviso=mais de uma GPU encontrada: intel (8086:5917), nvidia-580xx (10de:1d10); nada foi instalado. Para usar nvidia-580xx, rode: sudo xinguos-hwdetect --apply --forcar nvidia-580xx" ]
 }
 
 @test "sem GPU → desconhecida" {
@@ -147,8 +147,8 @@ preparar_apply() {
   [[ "$output" == *"só funciona com o driver 580xx"* ]]
 }
 
-@test "--guard libera RTX, AMD e várias GPUs" {
-  for f in rtx2060 rx6600 notebook; do
+@test "--guard libera RTX, AMD e RTX com iGPU" {
+  for f in rtx2060 rx6600 desktop-rtx-igpu; do
     XINGUOS_LSPCI_ARQUIVO="tests/fixtures/lspci/$f.txt" run "$HW" --guard
     [ "$status" -eq 0 ]
   done
@@ -172,4 +172,35 @@ preparar_apply() {
   [ "$(grep -c '^Target' "$h")" -eq 1 ]
   grep -qx "When = PostTransaction" "$h"
   grep -qx "Exec = /usr/bin/xinguos-hwdetect --hook" "$h"
+}
+
+@test "--guard bloqueia Pascal mesmo com a iGPU visível (desktop e notebook)" {
+  for f in desktop-1060-igpu notebook; do
+    XINGUOS_LSPCI_ARQUIVO="tests/fixtures/lspci/$f.txt" run "$HW" --guard
+    echo "$f: $output"
+    [ "$status" -eq 1 ]
+  done
+}
+
+@test "--forcar só aceita perfis de driver e lista os válidos" {
+  preparar_apply
+  XINGUOS_LSPCI_ARQUIVO=tests/fixtures/lspci/notebook.txt run "$HW" --apply --forcar varias
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"válidos: nvidia-580xx nvidia-open amd intel"* ]]
+}
+
+@test "--hook não grava gaming.conf quando não há GPU conhecida" {
+  preparar_apply
+  XINGUOS_LSPCI_ARQUIVO=tests/fixtures/lspci/sem-gpu.txt run "$HW" --hook
+  [ "$status" -eq 0 ]
+  [ ! -e "$XINGUOS_ETC/gaming.conf" ]
+}
+
+@test "--apply --forcar troca gaming.conf que o próprio hwdetect gerou" {
+  preparar_apply
+  XINGUOS_LSPCI_ARQUIVO=tests/fixtures/lspci/gtx1060.txt run "$HW" --hook
+  grep -qx "MODO_GAMING=compativel" "$XINGUOS_ETC/gaming.conf"
+  XINGUOS_LSPCI_ARQUIVO=tests/fixtures/lspci/desktop-rtx-igpu.txt run "$HW" --apply --forcar nvidia-open
+  [ "$status" -eq 0 ]
+  grep -qx "MODO_GAMING=completo" "$XINGUOS_ETC/gaming.conf"
 }

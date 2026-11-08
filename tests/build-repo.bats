@@ -83,3 +83,17 @@ setup_file() {
   [[ "$output" == *"conteúdo mudou sem subir pkgrel: xg-teste-a-1-1-any.pkg.tar.zst"* ]]
   [ ! -e "$novo/xinguos.db" ]
 }
+
+@test "mudança só de permissão também falha" {
+  local pub="$BATS_TEST_TMPDIR/pub" novo="$BATS_TEST_TMPDIR/novo" pk="$BATS_TEST_TMPDIR/pacotes"
+  cp -r tests/fixtures/pacotes "$pk"
+  sed -i 's|install -d "$pkgdir/usr/share/xg-teste-a"; }|install -Dm644 /dev/null "$pkgdir/usr/share/xg-teste-a/x"; }|' "$pk/xg-teste-a/PKGBUILD"
+  printf 'xg-teste-a
+' > "$BATS_TEST_TMPDIR/ordem.txt"
+  tools/build-repo.sh "$BATS_TEST_TMPDIR/ordem.txt" "$pk" "$pub"
+  sed -i 's|install -Dm644 /dev/null|install -Dm755 /dev/null|' "$pk/xg-teste-a/PKGBUILD"
+  XINGUOS_PUBLICADOS="$pub" run tools/build-repo.sh "$BATS_TEST_TMPDIR/ordem.txt" "$pk" "$novo"
+  echo "$output"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"conteúdo mudou sem subir pkgrel: xg-teste-a-1-1-any.pkg.tar.zst"* ]]
+}
