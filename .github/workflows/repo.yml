@@ -13,6 +13,15 @@ jobs:
       - name: Preparar ambiente Arch
         run: bash tools/ci-setup.sh
       - name: shellcheck
-        run: shellcheck tools/*.sh marco0/prototipo/steamos-session-select marco0/prototipo/xinguos-escrever-sessao marco0/prototipo/instalar.sh
+        run: shellcheck tools/*.sh tests/smoke-repo.sh marco0/prototipo/steamos-session-select marco0/prototipo/xinguos-escrever-sessao marco0/prototipo/instalar.sh
       - name: bats
         run: bats tests/
+
+  smoke:
+    if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Repositório publicado funciona num Arch limpo
+        run: bash tests/smoke-repo.sh "https://github.com/${{ github.repository }}/releases/download/repo-x86_64" "${{ vars.XINGUOS_GPG_FPR }}"
