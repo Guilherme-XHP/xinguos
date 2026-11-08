@@ -9,7 +9,7 @@ if ! grep -q '^\[multilib\]' /etc/pacman.conf; then
   printf '\n[multilib]\nInclude = /etc/pacman.d/mirrorlist\n' >> /etc/pacman.conf
 fi
 
-pacman -Syu --noconfirm --needed base-devel git namcap bats shellcheck github-cli
+pacman -Syu --noconfirm --needed base-devel git namcap bats shellcheck github-cli archiso
 
 # usuário sem privilégios para o makepkg (que se recusa a rodar como root)
 if ! id builder >/dev/null 2>&1; then

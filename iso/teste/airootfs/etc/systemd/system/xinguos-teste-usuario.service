@@ -1,0 +1,10 @@
+[Unit]
+Description=Cria o usuário xingu da ISO de teste do XInguOS
+Before=display-manager.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/xinguos-teste-usuario
+
+[Install]
+WantedBy=multi-user.target
