@@ -23,6 +23,9 @@ jobs:
         run: bats tests/
 
   build:
+    concurrency:
+      group: repo-x86_64
+      cancel-in-progress: false
     needs: testes
     if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
@@ -37,9 +40,17 @@ jobs:
         env:
           XINGUOS_GPG_KEY: ${{ secrets.XINGUOS_GPG_KEY }}
         run: echo "$XINGUOS_GPG_KEY" | gpg --batch --import
+      - name: Baixar pacotes já publicados (nome é imutável)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          mkdir -p publicados
+          gh release download repo-x86_64 -p '*.pkg.tar.zst' -p '*.pkg.tar.zst.sig' -D publicados || echo "sem release ainda"
       - name: Compilar e assinar
         env:
           XINGUOS_GPG_FPR: ${{ vars.XINGUOS_GPG_FPR }}
+          XINGUOS_PUBLICADOS: publicados
         run: |
           tools/build-repo.sh packages/ordem.txt packages out
           cp packages/xinguos/xinguos-keyring/xinguos.gpg out/
@@ -50,6 +61,9 @@ jobs:
         run: tools/publish-release.sh out repo-x86_64
 
   smoke:
+    concurrency:
+      group: repo-x86_64
+      cancel-in-progress: false
     needs: build
     if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
@@ -60,6 +74,9 @@ jobs:
         run: bash tests/smoke-repo.sh "https://github.com/${{ github.repository }}/releases/download/repo-x86_64" "${{ vars.XINGUOS_GPG_FPR }}"
 
   iso-teste:
+    concurrency:
+      group: repo-x86_64
+      cancel-in-progress: false
     needs: smoke
     if: github.event_name == 'workflow_dispatch' && inputs.iso
     runs-on: ubuntu-latest

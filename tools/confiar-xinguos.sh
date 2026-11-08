@@ -17,4 +17,4 @@ pacman-key --lsign-key "$fpr"
 if ! grep -q '^\[xinguos\]' /etc/pacman.conf; then
   printf '\n[xinguos]\nSigLevel = Required DatabaseOptional\nServer = %s\n' "$url" >> /etc/pacman.conf
 fi
-pacman -Sy --noconfirm xinguos-keyring
+pacman -Syu --noconfirm xinguos-keyring

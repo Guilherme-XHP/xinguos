@@ -24,7 +24,7 @@ Server = https://github.com/Guilherme-XHP/xinguos/releases/download/repo-x86_64
 
 ```bash
 # 3. instalar o keyring (atualizações da chave chegam por ele)
-sudo pacman -Sy xinguos-keyring
+sudo pacman -Syu xinguos-keyring
 ```
 
 Depois disso, instale o que quiser. Por exemplo, o driver da GTX 10xx:
