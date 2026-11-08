@@ -12,18 +12,8 @@ fpr=$2
 if ! grep -q '^\[multilib\]' /etc/pacman.conf; then
   printf '\n[multilib]\nInclude = /etc/pacman.d/mirrorlist\n' >> /etc/pacman.conf
 fi
-pacman-key --init
-
-# passo 1 do README: confiar na chave
-curl -fsSL -o /tmp/xinguos.gpg "$url/xinguos.gpg"
-pacman-key --add /tmp/xinguos.gpg
-pacman-key --lsign-key "$fpr"
-
-# passo 2: o bloco [xinguos]
-printf '\n[xinguos]\nSigLevel = Required DatabaseOptional\nServer = %s\n' "$url" >> /etc/pacman.conf
-
-# passo 3: o keyring
-pacman -Sy --noconfirm xinguos-keyring
+# passos 1 a 3 do README
+bash "$(dirname "$0")/../tools/confiar-xinguos.sh" "$url" "$fpr"
 pacman -Q xinguos-keyring
 
 # driver da GTX 10xx: baixa e verifica as assinaturas, sem instalar
