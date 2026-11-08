@@ -52,3 +52,8 @@ setup_file() {
   [ "$status" -ne 0 ]
   [[ "$output" == *XINGUOS_REPO_URL* ]]
 }
+
+@test "criar-persistencia vai pra ISO" {
+  [ -f "$PERFIL/airootfs/usr/local/bin/criar-persistencia" ]
+  grep -qF '["/usr/local/bin/criar-persistencia"]="0:0:755"' "$PERFIL/profiledef.sh"
+}
