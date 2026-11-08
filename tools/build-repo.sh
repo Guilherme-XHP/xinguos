@@ -13,19 +13,17 @@ set -euo pipefail
 
 die() { echo "build-repo: $*" >&2; exit 1; }
 
-# Impressão digital do CONTEÚDO de um pacote, ignorando o que muda a cada build
-# (data, empacotador, tamanho e os metadados .BUILDINFO/.MTREE).
+# Impressão digital do CONTEÚDO de um pacote, ignorando o que muda a cada build.
+# Usa o .MTREE (caminho, tipo, permissão, dono, link, sha256 de cada entrada, inclusive
+# diretórios vazios) sem os campos time=, mais o .PKGINFO sem data/empacotador/tamanho.
+# Retorna ≠ 0 se não conseguir ler o pacote — quem chama precisa tratar.
 assinatura_conteudo() {
-  local d
-  d=$(mktemp -d)
-  bsdtar -xf "$1" -C "$d"
-  (
-    cd "$d"
-    find . -type f ! -name .BUILDINFO ! -name .MTREE ! -name .PKGINFO -print0 | sort -z | xargs -0 -r sha256sum
-    find . -type l -printf '%p -> %l\n' | sort
-    grep -vE '^(builddate|packager|size) = ' .PKGINFO
-  )
-  rm -rf "$d"
+  local mtree pkginfo
+  mtree=$(bsdtar -xOf "$1" .MTREE | gzip -dc) || return 1
+  pkginfo=$(bsdtar -xOf "$1" .PKGINFO) || return 1
+  [ -n "$mtree" ] && [ -n "$pkginfo" ] || return 1
+  printf '%s\n' "$mtree" | grep -vE '^\./\.(PKGINFO|BUILDINFO) ' | sed -E 's/ time=[0-9.]+//'
+  printf '%s\n' "$pkginfo" | grep -vE '^(builddate|packager|size) = '
 }
 
 [ $# -eq 3 ] || die "uso: build-repo.sh <arquivo-ordem> <raiz-pacotes> <dir-saida>"
@@ -60,7 +58,9 @@ while IFS= read -r linha || [ -n "$linha" ]; do
   for pkg in "$dir"/*.pkg.tar.zst; do
     nome=$(basename "$pkg")
     if [ -n "$publicados" ] && [ -f "$publicados/$nome" ] && [ -f "$publicados/$nome.sig" ]; then
-      if [ "$(assinatura_conteudo "$pkg")" != "$(assinatura_conteudo "$publicados/$nome")" ]; then
+      novo=$(assinatura_conteudo "$pkg") || die "não consegui ler o conteúdo de $nome"
+      antigo=$(assinatura_conteudo "$publicados/$nome") || die "não consegui ler o conteúdo publicado de $nome"
+      if [ "$novo" != "$antigo" ]; then
         die "conteúdo mudou sem subir pkgrel: $nome"
       fi
       echo "==> $nome já publicado: reaproveitando os bytes publicados"

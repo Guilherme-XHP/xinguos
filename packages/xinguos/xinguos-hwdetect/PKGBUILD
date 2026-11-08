@@ -1,6 +1,6 @@
 pkgname=xinguos-hwdetect
 pkgver=0.1.0
-pkgrel=1
+pkgrel=2
 pkgdesc="Detecta a GPU e escolhe o driver certo no XInguOS (protege GTX 10xx do driver 590)"
 arch=(any)
 url="https://github.com/Guilherme-XHP/xinguos"
