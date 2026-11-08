@@ -1,0 +1,3 @@
+# pkgbase commit-do-upstream — fixa a source de pacotes -git (revisar o diff do upstream antes de mudar)
+gamescope-session-git 08e65a62ed3d7acc6ae17db637091d402a55ae2a
+gamescope-session-steam-git 82c45fc112775e3fa927d5c326c39b21f1761cc1

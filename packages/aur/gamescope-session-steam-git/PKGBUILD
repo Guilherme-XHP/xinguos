@@ -13,7 +13,7 @@ depends=('gamescope' 'gamescope-session-git')
 optdepends=('chimera: for steam-tweaks integration'
             'frzr: chimeraos update system')
 makedepends=('git')
-source=("${_gitdir}::git+https://github.com/OpenGamingCollective/${_gitdir}.git")
+source=("${_gitdir}::git+https://github.com/OpenGamingCollective/${_gitdir}.git#commit=82c45fc112775e3fa927d5c326c39b21f1761cc1")
 md5sums=('SKIP')
 
 pkgver() {

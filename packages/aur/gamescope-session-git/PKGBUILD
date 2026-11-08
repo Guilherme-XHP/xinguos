@@ -13,7 +13,7 @@ depends=('gamescope')
 makedepends=('git')
 optdepends=('mangohud: for performance overlay')
 install=gamescope-session.install
-source=("${_gitdir}::git+${url}.git")
+source=("${_gitdir}::git+${url}.git#commit=08e65a62ed3d7acc6ae17db637091d402a55ae2a")
 md5sums=('SKIP')
 
 pkgver() {
