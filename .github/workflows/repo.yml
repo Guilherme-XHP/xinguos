@@ -72,6 +72,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Preparar ambiente Arch
         run: bash tools/ci-setup.sh
+      - name: Ferramentas de boot do mkarchiso
+        run: pacman -S --noconfirm --needed grub
       - name: Confiar no [xinguos]
         run: bash tools/confiar-xinguos.sh "$XINGUOS_REPO_URL" "${{ vars.XINGUOS_GPG_FPR }}"
       - name: Montar a ISO
