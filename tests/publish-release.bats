@@ -37,3 +37,13 @@ setup() {
   run grep -q 'delete-asset repo-x86_64 xinguos.gpg ' "$GH_LOG"
   [ "$status" -ne 0 ]
 }
+
+@test "pacote que já está na release não é reenviado nem sobrescrito" {
+  GH_RELEASE_EXISTE=0 GH_ASSETS_EXISTENTES=$'foo-1-1-any.pkg.tar.zst
+foo-1-1-any.pkg.tar.zst.sig
+xinguos.db' run tools/publish-release.sh "$D" repo-x86_64
+  [ "$status" -eq 0 ]
+  run grep -E 'upload .*foo-1-1-any\.pkg\.tar\.zst' "$GH_LOG"
+  [ "$status" -ne 0 ]
+  grep -q 'upload repo-x86_64 --clobber .*xinguos\.db' "$GH_LOG"
+}

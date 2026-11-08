@@ -1,0 +1,2 @@
+xg-teste-stdin
+xg-teste-a

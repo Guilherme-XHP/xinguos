@@ -49,3 +49,24 @@ setup_file() {
   [[ "$output" == *"nome de pacote inválido para GitHub Releases"* ]]
   [ ! -e "$BATS_TEST_TMPDIR/o/xinguos.db" ]
 }
+
+@test "build que lê o stdin não engole os pacotes seguintes" {
+  run tools/build-repo.sh tests/fixtures/ordem-stdin.txt tests/fixtures/pacotes "$BATS_TEST_TMPDIR/o"
+  echo "$output"
+  [ "$status" -eq 0 ]
+  ls "$BATS_TEST_TMPDIR"/o/xg-teste-a-1-1-any.pkg.tar.zst
+}
+
+@test "pacote já publicado é reaproveitado byte a byte (nome é imutável)" {
+  local pub="$BATS_TEST_TMPDIR/pub" novo="$BATS_TEST_TMPDIR/novo"
+  tools/build-repo.sh tests/fixtures/ordem-ok.txt tests/fixtures/pacotes "$pub"
+  sleep 1
+  XINGUOS_PUBLICADOS="$pub" run tools/build-repo.sh tests/fixtures/ordem-ok.txt tests/fixtures/pacotes "$novo"
+  echo "$output"
+  [ "$status" -eq 0 ]
+  for p in xg-teste-a xg-teste-b xg-split-um xg-split-dois; do
+    cmp "$pub/$p-1-1-any.pkg.tar.zst" "$novo/$p-1-1-any.pkg.tar.zst"
+    cmp "$pub/$p-1-1-any.pkg.tar.zst.sig" "$novo/$p-1-1-any.pkg.tar.zst.sig"
+  done
+  gpg --verify "$novo/xinguos.db.sig" "$novo/xinguos.db"
+}
