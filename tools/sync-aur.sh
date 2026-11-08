@@ -22,7 +22,8 @@ trap 'rm -rf "$tmp"' EXIT
 git clone -q "$base/$pkgbase.git" "$tmp/clone" 2>/dev/null || die "não consegui clonar $base/$pkgbase.git"
 [ -f "$tmp/clone/PKGBUILD" ] || die "$pkgbase não tem PKGBUILD (pkgbase inexistente?)"
 commit=$(git -C "$tmp/clone" rev-parse HEAD)
-rm -rf "$tmp/clone/.git"
+# .git e o .gitignore do repositório AUR (que costuma ignorar "*" e esconderia arquivos do nosso git)
+rm -rf "$tmp/clone/.git" "$tmp/clone/.gitignore"
 
 destino="$raiz/aur/$pkgbase"
 rm -rf "$destino"
