@@ -50,3 +50,26 @@ setup() {
   [ -f "$R/aur/pkg-ign/pkg-ign.install" ]
   [ ! -e "$R/aur/pkg-ign/.gitignore" ]
 }
+
+@test "pacote -git com pin tem o commit fixado na source" {
+  local trabalho="$BATS_TEST_TMPDIR/trabalho3"
+  git init -q "$trabalho"
+  printf 'pkgname=pkg-pin\nsource=("x::git+https://exemplo.invalid/x.git")\n' > "$trabalho/PKGBUILD"
+  git -C "$trabalho" add -A
+  git -C "$trabalho" -c user.name=t -c user.email=t@t commit -qm inicial
+  git clone -q --bare "$trabalho" "$BATS_TEST_TMPDIR/aur/pkg-pin.git"
+  mkdir -p "$R"
+  echo "pkg-pin 0123456789abcdef0123456789abcdef01234567" > "$R/aur-pins.txt"
+  run tools/sync-aur.sh pkg-pin "$R"
+  echo "$output"
+  [ "$status" -eq 0 ]
+  grep -qF 'git+https://exemplo.invalid/x.git#commit=0123456789abcdef0123456789abcdef01234567"' "$R/aur/pkg-pin/PKGBUILD"
+}
+
+@test "pin sem source git+ falha em vez de ignorar" {
+  mkdir -p "$R"
+  echo "pkg-falso 0123456789abcdef0123456789abcdef01234567" > "$R/aur-pins.txt"
+  run tools/sync-aur.sh pkg-falso "$R"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"pin"* ]]
+}
