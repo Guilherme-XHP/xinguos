@@ -15,4 +15,24 @@ Itens pequenos que as revisões acharam e que ficaram para depois. Quem pegar um
   - o ícone do launcher é provisório até o Plano 6;
   - o PhotoGIMP é só optdepends;
   - o Krohnkite tem PKGBUILD próprio, então atualizar vira tarefa manual.
-- Vão para o Plano 5: o estado do Win+T não sobrevive ao reiniciar, e o autotile é por app.
+- ~~Vão para o Plano 5: o estado do Win+T não sobrevive ao reiniciar, e o autotile é por app.~~ O autotile por app foi feito no Plano 5, e o Win+T segue sem persistir (decisão no spec 7.2.1).
+
+## Plano 5 (foco)
+
+- `IOWeight` só tem efeito em HD (BFQ). Em SSD/NVMe, com o scheduler `none`, a prioridade de disco não vale: documentar ou usar iocost.
+- Antes de o daemon subir, o foco se perde. A correção é a ativação por D-Bus (`org.xinguos.Foco.service` com `SystemdService=`).
+- `units` cresce sem limite, e o `recarregar` chama o systemctl em scopes que já morreram. O subprocess é síncrono dentro do loop asyncio.
+- Com o nome já em uso, o daemon sai com 1 e reinicia a cada 5 s. A correção é `RestartPreventExitStatus=1`.
+- Painel:
+  - mostra "Salvo." mesmo quando o kwriteconfig6 falha;
+  - sobrescreve o TOML do usuário quando ele é inválido;
+  - sobrescreve o `ignoreClass` que tenha sido editado à mão no Krohnkite.
+- `test_qml_carrega` não instancia os delegates, porque o banco do teste está vazio.
+- `/etc/xdg/kwinrc` no xinguos-foco é redundante com o `EnabledByDefault` e vai dar conflito quando o desktop precisar desse arquivo.
+- O spec 7.2 pede peso 1000 para jogo `steam_app_*` em foco. Hoje ele recebe 500.
+- O banco faz um commit com fsync a cada 30 s em journal rollback. Melhor usar WAL + `synchronous=NORMAL`.
+- Para o Xingu revisar:
+  - os avisos de limite não têm botões (por exemplo, "mais 15 min");
+  - a ociosidade vem do swayidle;
+  - o nome curto vai junto no `ignoreClass`;
+  - o painel não usa Kirigami.
