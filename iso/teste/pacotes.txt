@@ -33,3 +33,4 @@ python
 e2fsprogs
 xinguos-base
 xinguos-hwdetect
+xinguos-desktop
