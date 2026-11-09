@@ -1,6 +1,6 @@
 pkgname=xinguos-base
 pkgver=0.1.0
-pkgrel=3
+pkgrel=4
 pkgdesc="Base do XInguOS: desempenho (zram, oomd, I/O), serviços, snapshots e ferramentas"
 arch=(any)
 url="https://github.com/Guilherme-XHP/xinguos"

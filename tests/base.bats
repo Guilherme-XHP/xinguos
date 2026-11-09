@@ -103,3 +103,25 @@ TESTE=packages/xinguos/xinguos-base/xinguos-teste
   grep -q 'install -Dm755 xinguos-teste "$pkgdir/usr/bin/xinguos-teste"' packages/xinguos/xinguos-base/PKGBUILD
   rm -rf "$T"
 }
+
+@test "xinguos-teste --gaming: abre o Gaming compatível numa janela e guarda o log" {
+  T=$(mktemp -d); mkdir -p "$T/raiz" "$T/home" "$T/bin"
+  printf '#!/usr/bin/env bash\necho "kwin_wayland $*" > "%s/chamada"\necho "steam: iniciando" >&2\nexit 0\n' "$T" > "$T/bin/kwin_wayland"
+  chmod +x "$T/bin/kwin_wayland"
+  HOME="$T/home" XINGUOS_RAIZ="$T/raiz" XINGUOS_ESPERA_GAMING=5 PATH="$T/bin:$PATH" run bash "$TESTE" --gaming
+  echo "$output"
+  [ "$status" -eq 0 ]
+  grep -q -- '--xwayland' "$T/chamada"
+  grep -q -- '--exit-with-session /usr/lib/xinguos/xinguos-steam-compativel' "$T/chamada"
+  grep -q 'steam: iniciando' "$T/home/.local/state/xinguos/gaming-janela.log"
+  # o log geral junta a janela de teste e a última sessão Gaming de verdade
+  HOME="$T/home" XINGUOS_RAIZ="$T/raiz" run bash "$TESTE"
+  f=$(ls "$T/home"/xinguos-teste-*.txt)
+  grep -q 'gaming-janela.log' "$f"
+  grep -q 'gaming-ultima-sessao.log' "$f"
+  rm -rf "$T"
+}
+
+@test "xinguos-teste --gaming recusa rodar como root (o Steam é do usuário)" {
+  grep -q 'rode sem sudo' "$TESTE"
+}

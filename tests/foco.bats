@@ -48,3 +48,9 @@ F=packages/xinguos/xinguos-foco
   run grep -n compileall "$F/PKGBUILD"
   [ "$status" -ne 0 ]
 }
+
+@test "foco já rodando sai com 3 e o systemd não fica reiniciando a cada 5 s" {
+  grep -qx 'JA_RODANDO = 3' packages/xinguos/xinguos-foco/xinguos_foco/servico.py
+  grep -q 'return JA_RODANDO' packages/xinguos/xinguos-foco/xinguos_foco/servico.py
+  grep -qx 'RestartPreventExitStatus=3' packages/xinguos/xinguos-foco/xinguos-foco.service
+}

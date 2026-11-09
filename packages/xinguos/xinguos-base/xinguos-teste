@@ -35,6 +35,43 @@ falha() { falhas=$((falhas + 1)); printf 'FALHA  %s\n' "$1" | tee -a "$resultado
 tem() { command -v "$1" >/dev/null 2>&1; }
 existe() { [ -e "$R$1" ]; }
 
+estado_u="$casa/.local/state/xinguos"
+
+# --gaming: abre o Gaming Mode compatível (KWin + Steam) numa JANELA, sem sair da Área de
+# Trabalho. Mostra se o Steam sobe sem depender do SDDM e da troca de sessão.
+if [ "${1:-}" = --gaming ]; then
+  if [ "$(id -u 2>/dev/null)" = 0 ] && [ -z "$R" ]; then
+    echo "xinguos-teste --gaming: rode sem sudo (o Steam abre como o seu usuário)" >&2
+    exit 2
+  fi
+  if [ -z "$R" ] && [ -z "${WAYLAND_DISPLAY:-}" ]; then
+    echo "xinguos-teste --gaming: rode de dentro da Área de Trabalho (Konsole no Plasma)" >&2
+    exit 2
+  fi
+  if tem pgrep && pgrep -x steam >/dev/null 2>&1; then
+    echo "xinguos-teste --gaming: feche o Steam antes (ele já está aberto)" >&2
+    exit 2
+  fi
+  espera=${XINGUOS_ESPERA_GAMING:-300}
+  mkdir -p "$estado_u"
+  janela="$estado_u/gaming-janela.log"
+  echo "Abrindo o Gaming Mode (modo compatível) numa janela, sem sair da Área de Trabalho."
+  echo "Espere o Steam aparecer (na 1ª vez ele baixa uns 500 MB). Feche a janela para terminar"
+  echo "(ela fecha sozinha em $((espera / 60)) min)."
+  echo "== janela de teste $quando" > "$janela"
+  comeco=$SECONDS
+  # sem atalhos globais e sem tela de bloqueio: disso cuida o KWin do Plasma, por fora
+  XINGUOS_JANELA_TESTE=1 timeout "$espera" kwin_wayland --xwayland --width 1280 --height 800 \
+    --no-global-shortcuts --no-lockscreen \
+    --exit-with-session /usr/lib/xinguos/xinguos-steam-compativel >> "$janela" 2>&1
+  rc=$?
+  echo "fim rc=$rc duracao=$((SECONDS - comeco))s" >> "$janela"
+  echo
+  echo "Pronto (saída $rc depois de $((SECONDS - comeco)) s). Log em: $janela"
+  echo "Agora rode: sudo xinguos-teste   (ele junta esse log com o resto)"
+  exit 0
+fi
+
 echo "xinguos-teste — $quando (usuário: $usuario)"
 echo
 
@@ -158,13 +195,20 @@ mostrar() { if [ -r "$R$1" ]; then echo "-- $1"; tail -n "${2:-200}" "$R$1"; els
   secao "placa de vídeo"
   if tem lspci; then lspci -k 2>/dev/null | grep -A3 -iE 'vga|3d|display'; else echo "(lspci não encontrado)"; fi
   rodar cat /proc/cmdline
+  secao "boot (GRUB e plymouth)"
+  mostrar /etc/default/grub 60
+  rodar plymouth-set-default-theme
+  grep -h '^HOOKS=' "$R/etc/mkinitcpio.conf" 2>/dev/null || echo "(sem /etc/mkinitcpio.conf)"
   secao "sessão do SDDM"
   for f in "$R"/etc/sddm.conf.d/*.conf; do [ -e "$f" ] && mostrar "${f#"$R"}" 30; done
   rodar loginctl list-sessions --no-pager
   secao "sessão Gaming"
-  mostrar "${casa#"$R"}/.local/state/xinguos/gaming-sessao.log" 100
-  mostrar "${casa#"$R"}/.local/state/xinguos/gaming-falhas" 5
+  mostrar "${estado_u#"$R"}/gaming-sessao.log" 100
+  mostrar "${estado_u#"$R"}/gaming-falhas" 5
+  mostrar "${estado_u#"$R"}/gaming-ultima-sessao.log" 300
+  mostrar "${estado_u#"$R"}/gaming-janela.log" 300
   mostrar "${casa#"$R"}/.local/share/sddm/wayland-session.log" 300
+  mostrar /var/lib/sddm/state.conf 20
   secao "Steam"
   mostrar "${casa#"$R"}/.local/share/Steam/logs/console-linux.txt" 150
   mostrar "${casa#"$R"}/.local/share/Steam/logs/bootstrap_log.txt" 80

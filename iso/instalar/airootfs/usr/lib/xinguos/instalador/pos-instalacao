@@ -4,7 +4,7 @@
 #   1. tira tudo que é só do live (usuário live, autologin, instalador, proteção do disco)
 #   2. remove pacotes do live (calamares, mkinitcpio-archiso, o kernel "linux" se houver o zen)
 #   3. driver de vídeo pelo xinguos-hwdetect
-#   4. presets do mkinitcpio + vmlinuz em /boot (o archiso esvazia o /boot) + initramfs
+#   4. presets do mkinitcpio + vmlinuz em /boot (o archiso esvazia o /boot) + plymouth + initramfs
 #   5. snapper para / (template xinguos)
 # Idempotente. Sai com ≠ 0 só se o essencial falhar (kernel/initramfs); o resto só avisa.
 # --raiz serve aos testes: os arquivos são lidos/escritos sob <dir>, e os comandos
@@ -142,6 +142,19 @@ for pb in "$R"/usr/lib/modules/*/pkgbase; do
   kernels=$((kernels + 1))
 done
 [ "$kernels" -gt 0 ] || die "nenhum kernel encontrado em /usr/lib/modules"
+# boot com a logo: hook do plymouth logo depois do systemd/udev e o tema do XInguOS
+# (antes do mkinitcpio, que copia o tema para dentro do initramfs)
+conf="$R/etc/mkinitcpio.conf"
+if [ -f "$conf" ] && ! grep -q '^HOOKS=.*\bplymouth\b' "$conf"; then
+  if grep -qE '^HOOKS=.*\b(systemd|udev)\b' "$conf"; then
+    sed -i -E '/^HOOKS=/ s/\b(systemd|udev)\b/& plymouth/' "$conf" || aviso "plymouth: HOOKS"
+  else
+    aviso "plymouth: HOOKS sem systemd/udev, boot fica sem a logo"
+  fi
+fi
+if command -v plymouth-set-default-theme >/dev/null; then
+  plymouth-set-default-theme xinguos || aviso "plymouth: tema xinguos"
+fi
 mkinitcpio -P || die "mkinitcpio -P falhou"
 
 # 5. snapper para / usando o subvolume @snapshots já montado em /.snapshots (sem create-config,

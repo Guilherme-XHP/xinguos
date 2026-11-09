@@ -160,3 +160,36 @@ teardown() { rm -rf "$RAIZ" "$LOG"; }
   grep -qx 'Before=archlinux-keyring-wkd-sync.service' "$s" || grep -qx 'Type=oneshot' "$s"
   cmp -s "$s" iso/teste/airootfs/etc/systemd/system/xinguos-live-chaveiro.service
 }
+
+@test "GRUB: padrões valem mesmo com /etc/default/grub do pacote, os-prober ligado e tema XInguOS" {
+  python3 - "$CAL/modules/grubcfg.conf" <<'PY'
+import sys, yaml
+g = yaml.safe_load(open(sys.argv[1], encoding="utf-8"))
+assert g["always_use_defaults"] is True, "senão o Calamares ignora os defaults (o grub do Arch já traz /etc/default/grub)"
+assert g["keep_distributor"] is False and "keepDistributor" not in g
+d = g["defaults"]
+assert d["GRUB_DISABLE_OS_PROBER"] is False
+assert d["GRUB_THEME"] == "/usr/share/grub/themes/xinguos/theme.txt"
+assert d["GRUB_TERMINAL_OUTPUT"] == "gfxterm"
+# Btrfs: o GRUB não grava o grubenv, então "saved" não funciona
+assert str(d["GRUB_DEFAULT"]) == "0" and "GRUB_SAVEDEFAULT" not in d
+assert "splash" in g["kernel_params"] and "quiet" in g["kernel_params"]
+PY
+}
+
+@test "boot com a logo: plymouth no initramfs (depois do systemd/udev) e tema xinguos" {
+  printf 'MODULES=()\nHOOKS=(base systemd autodetect microcode modconf kms keyboard sd-vconsole block filesystems fsck)\n' > "$RAIZ/etc/mkinitcpio.conf"
+  run bash "$POS" --raiz "$RAIZ"
+  echo "$output"
+  [ "$status" -eq 0 ]
+  grep -qx 'HOOKS=(base systemd plymouth autodetect microcode modconf kms keyboard sd-vconsole block filesystems fsck)' "$RAIZ/etc/mkinitcpio.conf"
+  grep -qx 'plymouth-set-default-theme xinguos' "$LOG"
+  # tema antes do initramfs (o hook copia o tema para dentro dele)
+  [ "$(grep -n 'plymouth-set-default-theme' "$LOG" | cut -d: -f1)" -lt "$(grep -n '^mkinitcpio -P' "$LOG" | cut -d: -f1)" ]
+  # rodar de novo não duplica; HOOKS com udev também serve
+  run bash "$POS" --raiz "$RAIZ"
+  [ "$(grep -o plymouth "$RAIZ/etc/mkinitcpio.conf" | wc -l)" -eq 1 ]
+  printf 'HOOKS=(base udev autodetect modconf block filesystems fsck)\n' > "$RAIZ/etc/mkinitcpio.conf"
+  run bash "$POS" --raiz "$RAIZ"
+  grep -qx 'HOOKS=(base udev plymouth autodetect modconf block filesystems fsck)' "$RAIZ/etc/mkinitcpio.conf"
+}
