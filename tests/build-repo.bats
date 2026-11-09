@@ -97,3 +97,17 @@ setup_file() {
   [ "$status" -ne 0 ]
   [[ "$output" == *"conteúdo mudou sem subir pkgrel: xg-teste-a-1-1-any.pkg.tar.zst"* ]]
 }
+
+@test "pacote compilado (arch ≠ any) já publicado não é recompilado: bytes publicados reaproveitados" {
+  local pub="$BATS_TEST_TMPDIR/pub" novo="$BATS_TEST_TMPDIR/novo"
+  printf 'xg-teste-a\nxg-compilado\n' > "$BATS_TEST_TMPDIR/ordem.txt"
+  tools/build-repo.sh "$BATS_TEST_TMPDIR/ordem.txt" tests/fixtures/pacotes "$pub"
+  sleep 1
+  XINGUOS_PUBLICADOS="$pub" run tools/build-repo.sh "$BATS_TEST_TMPDIR/ordem.txt" tests/fixtures/pacotes "$novo"
+  echo "$output"
+  [ "$status" -eq 0 ]
+  cmp "$pub/xg-compilado-1-1-x86_64.pkg.tar.zst" "$novo/xg-compilado-1-1-x86_64.pkg.tar.zst"
+  cmp "$pub/xg-compilado-1-1-x86_64.pkg.tar.zst.sig" "$novo/xg-compilado-1-1-x86_64.pkg.tar.zst.sig"
+  [[ "$output" == *"xg-compilado-1-1-x86_64.pkg.tar.zst já publicado (compilado): reaproveitado sem recompilar"* ]]
+  pacman -Q xg-compilado
+}

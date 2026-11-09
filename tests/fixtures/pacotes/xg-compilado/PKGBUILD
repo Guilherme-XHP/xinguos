@@ -1,0 +1,8 @@
+pkgname=xg-compilado
+pkgver=1
+pkgrel=1
+pkgdesc="Fixture do build-repo: binário compilado que nunca sai igual (como o Calamares)"
+arch=(x86_64)
+license=(MIT)
+options=(!debug)
+package() { install -d "$pkgdir/usr/share/xg-compilado"; date +%s%N > "$pkgdir/usr/share/xg-compilado/build"; }
