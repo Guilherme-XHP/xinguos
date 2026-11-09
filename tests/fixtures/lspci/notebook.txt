@@ -1,0 +1,2 @@
+00:02.0 VGA compatible controller [0300]: Intel Corporation UHD Graphics 620 [8086:5917] (rev 07)
+01:00.0 3D controller [0302]: NVIDIA Corporation GP107M [GeForce MX150] [10de:1d10] (rev a1)
