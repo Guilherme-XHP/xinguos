@@ -26,7 +26,7 @@ class Rastreador:
         self.app, self.inicio, self.pausado = app, agora, False
 
     def ocioso(self, segundos: float, agora: float) -> None:
-        if segundos > self.limite:
+        if segundos >= self.limite:
             if not self.pausado:
                 self._fechar(agora - segundos)
                 self.pausado = True
@@ -39,3 +39,9 @@ class Rastreador:
         if not self.pausado:
             self._fechar(agora)
         self.app, self.inicio, self.pausado = None, None, False
+
+    def checkpoint(self, agora: float) -> None:
+        """Grava o pedaço em andamento (para totais e limites ficarem em dia)."""
+        if not self.pausado and self.app and self.inicio is not None and agora > self.inicio:
+            self._fechar(agora)
+            self.inicio = agora

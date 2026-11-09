@@ -67,3 +67,24 @@ def test_ociosidade_que_atravessa_a_meia_noite_nao_fica_negativa(tmp_path):
     r.encerrar(meia_noite + 460)
     assert b.totais_do_dia(date(2026, 11, 8)) == []
     assert b.totais_do_dia(date(2026, 11, 9)) == [("steam", 61)]
+
+
+def test_checkpoint_grava_o_pedaco_em_andamento():
+    b = BancoFalso()
+    r = Rastreador(b)
+    r.foco("firefox", 0)
+    r.checkpoint(30)
+    r.checkpoint(60)
+    r.foco("firefox", 70)      # mesmo app: não duplica
+    r.encerrar(90)
+    assert b.intervalos == [("firefox", 0, 30), ("firefox", 30, 60), ("firefox", 60, 90)]
+    assert sum(f - i for _, i, f in b.intervalos) == 90
+
+
+def test_checkpoint_pausado_nao_grava():
+    b = BancoFalso()
+    r = Rastreador(b)
+    r.foco("firefox", 0)
+    r.ocioso(120, 200)
+    r.checkpoint(250)
+    assert b.intervalos == [("firefox", 0, 80)]
