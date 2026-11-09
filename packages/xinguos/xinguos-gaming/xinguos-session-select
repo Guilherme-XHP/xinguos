@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+# xinguos-session-select — troca entre o Gaming Mode e a Área de Trabalho (spec 4.2).
+# Também é o /usr/lib/os-session-select, que o steamos-session-select do Steam chama
+# no botão "Mudar para a Área de Trabalho" (com "plasma").
+#
+#   xinguos-session-select gaming|gamescope        vai para o Gaming Mode
+#   xinguos-session-select desktop|plasma[-...]    vai para a Área de Trabalho
+#   xinguos-session-select --default gaming|desktop|ultima   sessão ao ligar o PC
+#   xinguos-session-select --modo completo|compativel        modo do Gaming (spec 4.4)
+#   xinguos-session-select --status
+#
+# Quem grava como root é o helper, liberado sem senha pela regra do polkit
+# 49-xinguos-sessao.rules (grupo wheel, sessão local ativa).
+set -euo pipefail
+
+HELPER=${XINGUOS_HELPER:-/usr/lib/xinguos/xinguos-sessao-root}
+ETC=${XINGUOS_ETC:-/etc/xinguos}
+
+uso() {
+  echo "uso: xinguos-session-select gaming|desktop | --default gaming|desktop|ultima | --modo completo|compativel | --status" >&2
+  exit 2
+}
+
+trocar() {
+  local usuario
+  usuario=$(id -un)
+  pkexec "$HELPER" sessao "$usuario" "$1"
+  # encerra a sessão atual; o SDDM (Relogin=true) entra sozinho na escolhida
+  if [ -n "${XDG_SESSION_ID:-}" ]; then
+    loginctl terminate-session "$XDG_SESSION_ID"
+  else
+    loginctl terminate-user "$usuario"
+  fi
+}
+
+valor() {  # valor <arquivo> <chave> <padrão>
+  local v
+  v=$(sed -n "s/^$2=//p" "$1" 2>/dev/null | tail -1)
+  echo "${v:-$3}"
+}
+
+case "${1:-}" in
+  gaming | gamescope) [ $# -eq 1 ] || uso; trocar xinguos-gaming.desktop ;;
+  desktop | plasma | plasma-*) [ $# -eq 1 ] || uso; trocar plasma.desktop ;;
+  --default) [ $# -eq 2 ] || uso; pkexec "$HELPER" padrao "$2" ;;
+  --modo) [ $# -eq 2 ] || uso; pkexec "$HELPER" modo "$2" ;;
+  --status)
+    echo "padrao=$(valor "$ETC/sessao.conf" PADRAO ultima)"
+    echo "modo=$(valor "$ETC/gaming.conf" MODO_GAMING compativel)"
+    ;;
+  *) uso ;;
+esac

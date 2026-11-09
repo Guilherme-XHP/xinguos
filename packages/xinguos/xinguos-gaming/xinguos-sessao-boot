@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# xinguos-sessao-boot — roda antes do SDDM (xinguos-sessao-boot.service). Se a sessão
+# padrão estiver fixada (gaming ou desktop), o login automático do boot vai para ela;
+# com "ultima" (padrão), abre na última sessão usada (spec 4.2).
+set -euo pipefail
+
+SDDM=${XINGUOS_SDDM_DIR:-/etc/sddm.conf.d}
+ETC=${XINGUOS_ETC:-/etc/xinguos}
+f="$SDDM/zz-xinguos-session.conf"
+
+[ -f "$f" ] || exit 0
+padrao=$(sed -n 's/^PADRAO=//p' "$ETC/sessao.conf" 2>/dev/null | tail -1)
+case "$padrao" in
+  gaming) sessao=xinguos-gaming.desktop ;;
+  desktop) sessao=plasma.desktop ;;
+  *) exit 0 ;;
+esac
+sed -i "s/^Session=.*/Session=$sessao/" "$f"

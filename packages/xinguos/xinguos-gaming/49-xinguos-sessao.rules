@@ -1,0 +1,8 @@
+// XInguOS: trocar entre Gaming Mode e Área de Trabalho sem senha (spec 4.2).
+// Só o helper da troca, só para o grupo wheel, só numa sessão local e ativa.
+polkit.addRule(function (action, subject) {
+    if (action.id == "org.xinguos.sessao" &&
+        subject.isInGroup("wheel") && subject.active && subject.local) {
+        return polkit.Result.YES;
+    }
+});
