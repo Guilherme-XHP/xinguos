@@ -18,3 +18,14 @@
 **Persistência (Task 14): ADIADA (decisão do Xingu, 2026-11-08).** O `criar-persistencia` falhou antes de criar qualquer coisa: o `D:` ficou intacto. Provável causa: a partição do Ventoy não monta no live, e/ou o modo alternativo de boot. Além disso, o modo normal do Ventoy dá erro no GRUB com a ISO. O live serve só para testes rápidos (o cow tem 8 GB em RAM); o teste 4 (Alyx, 67 GB) fica para quando houver persistência ou o sistema estiver instalado.
 
 **Modo padrão da GTX 1060:** completo | compatível
+
+## Plano 2 no live (2026-11-09)
+
+| Teste | Resultado | Notas |
+|---|---|---|
+| `zramctl` | ok | `/dev/zram0` zstd 5.8G em uso como [SWAP] |
+| `sysctl vm.swappiness` | ok | 180 |
+| `xinguos-hwdetect --detectar` | ok | `perfil=nvidia-580xx`, sem aviso: a iGPU Intel está desligada na BIOS, só a 1060 aparece |
+| `sudo pacman -S nvidia-open-dkms` (guard) | não testado | O live não tinha espelhos: o `mirrorlist` do perfil baseline vem todo comentado e o `pacman -Sy` falhava com "no servers configured". Corrigido na ISO seguinte (mirrorlist com geo.mirror.pkgbuild.com + C3SL/UFPR). Retestar com `sudo pacman -Sy` e depois `sudo pacman -S nvidia-open-dkms` |
+
+Observação: no boot aparecem várias linhas `Invalid ELF header magic: != ELF` durante o hook do archiso; o boot segue normal.
