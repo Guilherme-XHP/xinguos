@@ -49,3 +49,17 @@ Itens pequenos que as revisões acharam e que ficaram para depois. Quem pegar um
   - o Android SDK depende do JDK do xinguos-apps.
 - Plymouth e tema do GRUB ficam para o branding final.
 - O teste de instalação no CI cobre o pós-instalação no chroot. O Calamares gráfico (particionar, GRUB de verdade, primeiro boot) só foi testado à mão.
+
+## Plano 3 (Gaming Mode)
+
+- `xinguos-sessao-root`:
+  - se falhar no meio, deixa `zz-xinguos-session.conf.XXXXXX` (falta `trap`);
+  - sem `PKEXEC_UID`, pula a checagem de usuário (só o root chega lá).
+- A sessão "Steam Big Picture" do upstream aparece no SDDM e pula o contador e a troca.
+- O cursor `steam` do upstream pode vazar para apps GTK no Plasma.
+- Foco: deixa peso 100 no scope do Steam quando o jogo perde o foco, por cima do "sempre" do steam.
+- O ícone "Voltar ao Gaming Mode" só aparece no launcher, não na área de trabalho (spec 4.2).
+- Boas-vindas: se o pkexec falhar, o ComboBox continua mostrando o valor novo.
+- O Plasma pode cancelar o logout (app com trabalho não salvo). Nesse caso a troca fica gravada para o próximo logout.
+- Modo compatível: um launcher de fora do Steam pode ser organizado pelo Krohnkite (o Steam e os jogos estão no `ignoreClass`).
+- Marco 0 teste 2 (gamescope na GTX 1060) ainda não foi feito. A 1060 começa no modo compatível.
