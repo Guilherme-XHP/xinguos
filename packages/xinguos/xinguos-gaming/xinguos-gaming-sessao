@@ -15,10 +15,25 @@ ETC=${XINGUOS_ETC:-/etc/xinguos}
 ESTADO=${XINGUOS_ESTADO:-${XDG_STATE_HOME:-$HOME/.local/state}/xinguos}
 LIMITE_RAPIDA=60
 MAX_FALHAS=2
+LOG_SESSAO="$ESTADO/gaming-sessao.log"
+
+# registro curto de cada sessão (o xinguos-diagnostico junta tudo); também vai para o
+# stderr, que o SDDM guarda em ~/.local/share/sddm/wayland-session.log
+registrar() {
+  local linha
+  printf -v linha '%(%F %T)T %s' -1 "$*"
+  echo "xinguos-gaming-sessao: $*" >&2
+  echo "$linha" >> "$LOG_SESSAO" 2>/dev/null || return 0
+  if [ "$(wc -l < "$LOG_SESSAO")" -gt 500 ]; then
+    tail -n 300 "$LOG_SESSAO" > "$LOG_SESSAO.tmp" && mv -f "$LOG_SESSAO.tmp" "$LOG_SESSAO"
+  fi
+}
 
 mkdir -p "$ESTADO"
 rm -f "$ESTADO/troca-pedida"
 modo=$(sed -n 's/^MODO_GAMING=//p' "$ETC/gaming.conf" 2>/dev/null | tail -1)
+[ "$modo" = completo ] || modo=compativel
+registrar "inicio modo=$modo usuario=$(id -un 2>/dev/null) XDG_CURRENT_DESKTOP=${XDG_CURRENT_DESKTOP:-}"
 inicio=$(date +%s)
 case "$modo" in
   completo) gamescope-session-plus steam ;;
@@ -31,10 +46,12 @@ contador="$ESTADO/gaming-falhas"
 if [ -e "$ESTADO/troca-pedida" ]; then
   rm -f "$ESTADO/troca-pedida"
   echo 0 > "$contador"
+  registrar "fim rc=$rc duracao=${duracao}s resultado=troca-pedida"
 elif [ "$duracao" -lt "$LIMITE_RAPIDA" ]; then
   anterior=$(cat "$contador" 2>/dev/null || true)
   [[ "$anterior" =~ ^[0-9]+$ ]] || anterior=0
   falhas=$((anterior + 1))
+  registrar "fim rc=$rc duracao=${duracao}s resultado=queda falhas=$falhas"
   if [ "$falhas" -ge "$MAX_FALHAS" ]; then
     echo 0 > "$contador"
     : > "$ESTADO/gaming-aviso"
@@ -45,6 +62,7 @@ elif [ "$duracao" -lt "$LIMITE_RAPIDA" ]; then
   fi
 else
   echo 0 > "$contador"
+  registrar "fim rc=$rc duracao=${duracao}s resultado=saiu-do-steam"
   xinguos-session-select --proxima desktop || true
 fi
 exit "$rc"

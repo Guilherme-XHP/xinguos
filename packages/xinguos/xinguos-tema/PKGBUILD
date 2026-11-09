@@ -1,0 +1,52 @@
+# Tema escuro do XInguOS, escolhido pelo Xingu:
+#   - ícones Tela (vinceliuice) — as pastas seguem a cor de seleção do Plasma (o vinho #640000)
+#   - Plasma style Materia-Color e decoração Materia-Dark (Materia KDE, PapirusDevelopmentTeam)
+#   - esquema de cores "XInguOS Escuro": Materia Dark com o vinho #640000 no lugar do azul
+pkgname=xinguos-tema
+pkgver=0.1.0
+pkgrel=1
+_tela=2026-07-07
+_materia=20220823
+pkgdesc="Tema escuro do XInguOS: ícones Tela, Plasma Materia e o esquema XInguOS Escuro (vinho #640000)"
+arch=(any)
+url="https://github.com/Guilherme-XHP/xinguos"
+license=(GPL-3.0-or-later)
+depends=(hicolor-icon-theme breeze-icons)
+makedepends=(gtk-update-icon-cache)
+conflicts=(materia-kde)
+source=("tela-$_tela.tar.gz::https://github.com/vinceliuice/Tela-icon-theme/archive/refs/tags/$_tela.tar.gz"
+        "materia-kde-$_materia.tar.gz::https://github.com/PapirusDevelopmentTeam/materia-kde/archive/refs/tags/$_materia.tar.gz"
+        XInguOSEscuro.colors)
+sha256sums=('6b8c28f637067a15551459ab90e6720c5aba1215b777b6f1f506fea188a1ddf9'
+            '2731ffbf22e6fa4afa321fd677d3981c9a3851b9bca1e65d2439e6f3f6b735bf'
+            SKIP)
+
+package() {
+  # Tela: variantes padrão, clara e escura com o nome Tela-XInguOS
+  install -d "$pkgdir/usr/share/icons"
+  (cd "Tela-icon-theme-$_tela" && ./install.sh -d "$pkgdir/usr/share/icons" -n Tela-XInguOS)
+  [ -f "$pkgdir/usr/share/icons/Tela-XInguOS-dark/index.theme" ]
+
+  # Materia: só o que o XInguOS usa (o resto fica no materia-kde do AUR)
+  local m="materia-kde-$_materia"
+  install -d "$pkgdir/usr/share/plasma/desktoptheme" "$pkgdir/usr/share/aurorae/themes"
+  cp -r "$m/plasma/desktoptheme/Materia-Color" "$pkgdir/usr/share/plasma/desktoptheme/"
+  cp -r "$m/aurorae/themes/Materia-Dark" "$pkgdir/usr/share/aurorae/themes/"
+  # Plasma 6 prefere metadata.json (o metadata.desktop antigo continua lá)
+  cat > "$pkgdir/usr/share/plasma/desktoptheme/Materia-Color/metadata.json" <<EOF
+{
+    "KPlugin": {
+        "Authors": [{ "Email": "varlesh@gmail.com", "Name": "Alexey Varfolomeev" }],
+        "Id": "Materia-Color",
+        "License": "GPL-3.0",
+        "Name": "Materia Color",
+        "Version": "$_materia"
+    },
+    "X-Plasma-API-Minimum-Version": "6.0"
+}
+EOF
+  install -Dm644 "$m/konsole/MateriaDark.colorscheme" "$pkgdir/usr/share/konsole/MateriaDark.colorscheme"
+  install -Dm644 XInguOSEscuro.colors "$pkgdir/usr/share/color-schemes/XInguOSEscuro.colors"
+  find "$pkgdir/usr/share/plasma" "$pkgdir/usr/share/aurorae" -type f -exec chmod 644 {} +
+  find "$pkgdir/usr/share/plasma" "$pkgdir/usr/share/aurorae" -type d -exec chmod 755 {} +
+}

@@ -174,7 +174,7 @@ aj() {
 
 @test "desktop usa o branding: cor de destaque, wallpaper e ícone do XInguOS" {
   local js=$LNF/contents/layouts/org.kde.plasma.desktop-layout.js
-  grep -qx "AccentColor=46,196,182" "$D/etc-xdg/kdeglobals"
+  grep -qx "ColorScheme=XInguOSEscuro" "$D/etc-xdg/kdeglobals"
   grep -q 'writeConfig("Image", "file:///usr/share/wallpapers/XInguOS")' "$js"
   grep -q 'wallpaperPlugin = "org.kde.image"' "$js"
   grep -q 'writeConfig("icon", "xinguos")' "$js"

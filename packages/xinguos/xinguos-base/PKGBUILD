@@ -1,6 +1,6 @@
 pkgname=xinguos-base
 pkgver=0.1.0
-pkgrel=2
+pkgrel=3
 pkgdesc="Base do XInguOS: desempenho (zram, oomd, I/O), serviços, snapshots e ferramentas"
 arch=(any)
 url="https://github.com/Guilherme-XHP/xinguos"
@@ -17,8 +17,8 @@ depends=(
 install=xinguos-base.install
 source=(zram-generator.conf 90-xinguos.sysctl.conf 60-xinguos-ioschedulers.rules
         90-xinguos-journald.conf 90-xinguos-oomd-user.conf 90-xinguos-oomd-root.conf
-        snapper-xinguos 90-xinguos-delegate.conf)
-sha256sums=(SKIP SKIP SKIP SKIP SKIP SKIP SKIP SKIP)
+        snapper-xinguos 90-xinguos-delegate.conf xinguos-teste)
+sha256sums=(SKIP SKIP SKIP SKIP SKIP SKIP SKIP SKIP SKIP)
 
 # Tudo em diretórios de fornecedor: qualquer arquivo do usuário em /etc tem prioridade.
 package() {
@@ -30,4 +30,5 @@ package() {
   install -Dm644 90-xinguos-oomd-root.conf "$pkgdir/usr/lib/systemd/system/-.slice.d/90-xinguos-oomd.conf"
   install -Dm644 snapper-xinguos "$pkgdir/usr/share/snapper/config-templates/xinguos"
   install -Dm644 90-xinguos-delegate.conf "$pkgdir/usr/lib/systemd/system/user@.service.d/90-xinguos-delegate.conf"
+  install -Dm755 xinguos-teste "$pkgdir/usr/bin/xinguos-teste"
 }

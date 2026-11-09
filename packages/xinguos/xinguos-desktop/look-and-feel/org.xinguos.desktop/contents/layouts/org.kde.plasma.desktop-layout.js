@@ -12,7 +12,7 @@ for (var i = 0; i < areas.length; i++) {
 
 var topo = new Panel;
 topo.location = "top";
-topo.height = 28;
+topo.height = 24;
 topo.floating = false;
 topo.lengthMode = "fill";
 topo.hiding = "none";

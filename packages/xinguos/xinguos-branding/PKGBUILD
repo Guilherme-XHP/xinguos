@@ -1,7 +1,7 @@
 pkgname=xinguos-branding
 pkgver=0.1.0
-pkgrel=1
-pkgdesc="Identidade visual provisória do XInguOS: os-release, logo, wallpaper, SDDM e o easter egg"
+pkgrel=2
+pkgdesc="Identidade visual do XInguOS (logo XH Prod do Xingu, vinho #640000): os-release, wallpaper, SDDM e o easter egg"
 arch=(any)
 url="https://github.com/Guilherme-XHP/xinguos"
 license=(GPL-3.0-or-later)

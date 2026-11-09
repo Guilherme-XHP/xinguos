@@ -1,6 +1,6 @@
 pkgname=xinguos-desktop
 pkgver=0.1.0
-pkgrel=5
+pkgrel=6
 pkgdesc="Desktop do XInguOS: Plasma mínimo, barra no topo estilo Mac, dock, atalhos do Windows e autotile"
 arch=(any)
 url="https://github.com/Guilherme-XHP/xinguos"
@@ -12,9 +12,9 @@ depends=(
   konsole dolphin kate ark gwenview okular spectacle
   appmenu-gtk-module kwin-scripts-krohnkite
   polkit-kde-agent kde-gtk-config kwallet-pam
-  xinguos-foco xinguos-branding xinguos-boasvindas
+  xinguos-foco xinguos-branding xinguos-boasvindas xinguos-tema
 )
-backup=(etc/xdg/kdeglobals etc/xdg/baloofilerc)
+backup=(etc/xdg/kdeglobals etc/xdg/baloofilerc etc/xdg/plasmarc)
 install=xinguos-desktop.install
 source=(xinguos-primeiro-login)
 sha256sums=(SKIP)
@@ -26,6 +26,7 @@ package() {
   install -Dm644 "$startdir/$lnf/contents/layouts/org.kde.plasma.desktop-layout.js" "$pkgdir/usr/share/plasma/look-and-feel/org.xinguos.desktop/contents/layouts/org.kde.plasma.desktop-layout.js"
   install -Dm644 "$startdir/etc-xdg/kdeglobals" "$pkgdir/etc/xdg/kdeglobals"
   install -Dm644 "$startdir/etc-xdg/baloofilerc" "$pkgdir/etc/xdg/baloofilerc"
+  install -Dm644 "$startdir/etc-xdg/plasmarc" "$pkgdir/etc/xdg/plasmarc"
   install -Dm644 "$startdir/etc-xdg/plasma-workspace/env/xinguos-primeiro-login.sh" "$pkgdir/etc/xdg/plasma-workspace/env/xinguos-primeiro-login.sh"
   install -Dm755 xinguos-primeiro-login "$pkgdir/usr/lib/xinguos/xinguos-primeiro-login"
 }

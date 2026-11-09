@@ -52,6 +52,7 @@ trocar() {
   gravar_proxima "$1"
   mkdir -p "$ESTADO"
   : > "$ESTADO/troca-pedida"
+  printf '%(%F %T)T troca para %s (sessão atual: %s)\n' -1 "$1" "${XDG_CURRENT_DESKTOP:-?}" >> "$ESTADO/gaming-sessao.log" || true
   case "${XDG_CURRENT_DESKTOP:-}" in
     *gamescope*)
       # Gaming: o Steam fecha direito (nuvem, configurações) e a sessão termina com ele;

@@ -11,6 +11,7 @@ xinguos/kwin-scripts-krohnkite
 xinguos/xinguos-branding
 xinguos/xinguos-boasvindas
 xinguos/xinguos-foco
+xinguos/xinguos-tema
 xinguos/xinguos-desktop
 xinguos/xinguos-apps
 aur/calamares
