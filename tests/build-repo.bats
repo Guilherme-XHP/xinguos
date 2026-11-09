@@ -70,3 +70,16 @@ setup_file() {
   done
   gpg --verify "$novo/xinguos.db.sig" "$novo/xinguos.db"
 }
+
+@test "conteúdo mudou com o mesmo nome falha" {
+  local pub="$BATS_TEST_TMPDIR/pub" novo="$BATS_TEST_TMPDIR/novo" pk="$BATS_TEST_TMPDIR/pacotes"
+  tools/build-repo.sh tests/fixtures/ordem-ok.txt tests/fixtures/pacotes "$pub"
+  cp -r tests/fixtures/pacotes "$pk"
+  sed -i 's|install -d "$pkgdir/usr/share/xg-teste-a"; }|install -d "$pkgdir/usr/share/xg-teste-a"; touch "$pkgdir/usr/share/xg-teste-a/novo"; }|' "$pk/xg-teste-a/PKGBUILD"
+  grep -q novo "$pk/xg-teste-a/PKGBUILD"
+  XINGUOS_PUBLICADOS="$pub" run tools/build-repo.sh tests/fixtures/ordem-ok.txt "$pk" "$novo"
+  echo "$output"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"conteúdo mudou sem subir pkgrel: xg-teste-a-1-1-any.pkg.tar.zst"* ]]
+  [ ! -e "$novo/xinguos.db" ]
+}
