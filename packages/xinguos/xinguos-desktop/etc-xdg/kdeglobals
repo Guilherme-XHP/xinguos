@@ -1,4 +1,8 @@
 # XInguOS: padrões do sistema (o que o usuário mudar em ~/.config/kdeglobals ganha)
+[General]
+# turquesa do XInguOS
+AccentColor=46,196,182
+
 [KDE]
 LookAndFeelPackage=org.xinguos.desktop
 AnimationDurationFactor=0.5
