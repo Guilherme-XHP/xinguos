@@ -13,6 +13,21 @@ set -euo pipefail
 
 die() { echo "build-repo: $*" >&2; exit 1; }
 
+# Impressão digital do CONTEÚDO de um pacote, ignorando o que muda a cada build
+# (data, empacotador, tamanho e os metadados .BUILDINFO/.MTREE).
+assinatura_conteudo() {
+  local d
+  d=$(mktemp -d)
+  bsdtar -xf "$1" -C "$d"
+  (
+    cd "$d"
+    find . -type f ! -name .BUILDINFO ! -name .MTREE ! -name .PKGINFO -print0 | sort -z | xargs -0 -r sha256sum
+    find . -type l -printf '%p -> %l\n' | sort
+    grep -vE '^(builddate|packager|size) = ' .PKGINFO
+  )
+  rm -rf "$d"
+}
+
 [ $# -eq 3 ] || die "uso: build-repo.sh <arquivo-ordem> <raiz-pacotes> <dir-saida>"
 ordem=$1
 raiz=$2
@@ -45,6 +60,9 @@ while IFS= read -r linha || [ -n "$linha" ]; do
   for pkg in "$dir"/*.pkg.tar.zst; do
     nome=$(basename "$pkg")
     if [ -n "$publicados" ] && [ -f "$publicados/$nome" ] && [ -f "$publicados/$nome.sig" ]; then
+      if [ "$(assinatura_conteudo "$pkg")" != "$(assinatura_conteudo "$publicados/$nome")" ]; then
+        die "conteúdo mudou sem subir pkgrel: $nome"
+      fi
       echo "==> $nome já publicado: reaproveitando os bytes publicados"
       cp "$publicados/$nome" "$publicados/$nome.sig" "$out/"
       rm -f "$pkg"
