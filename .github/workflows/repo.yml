@@ -21,6 +21,8 @@ jobs:
         run: shellcheck tools/*.sh packages/xinguos/xinguos-desktop/xinguos-primeiro-login packages/xinguos/xinguos-hwdetect/xinguos-hwdetect marco0/criar-persistencia.sh iso/teste/airootfs/usr/local/bin/xinguos-teste-usuario tests/smoke-repo.sh marco0/prototipo/steamos-session-select marco0/prototipo/xinguos-escrever-sessao marco0/prototipo/instalar.sh
       - name: bats
         run: bats tests/
+      - name: script do KWin (foco)
+        run: node foco/tests/kwin.test.js
       - name: pytest (foco)
         run: python -m pytest -q foco/tests -m "not dbus"
       - name: pytest (foco, D-Bus)
