@@ -139,3 +139,37 @@ preparar_apply() {
   [ "$status" -eq 0 ]
   grep -qx "MODO_GAMING=completo" "$XINGUOS_ETC/gaming.conf"
 }
+
+@test "--guard bloqueia GTX 1060" {
+  XINGUOS_LSPCI_ARQUIVO=tests/fixtures/lspci/gtx1060.txt run "$HW" --guard
+  echo "$output"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"só funciona com o driver 580xx"* ]]
+}
+
+@test "--guard libera RTX, AMD e várias GPUs" {
+  for f in rtx2060 rx6600 notebook; do
+    XINGUOS_LSPCI_ARQUIVO="tests/fixtures/lspci/$f.txt" run "$HW" --guard
+    [ "$status" -eq 0 ]
+  done
+}
+
+@test "hook do guard é PreTransaction com AbortOnFail e cobre nvidia-open-dkms e nvidia-utils" {
+  local h=packages/xinguos/xinguos-hwdetect/10-xinguos-nvidia-guard.hook
+  grep -qx "When = PreTransaction" "$h"
+  grep -qx "AbortOnFail" "$h"
+  grep -qx "Exec = /usr/bin/xinguos-hwdetect --guard" "$h"
+  for t in nvidia nvidia-dkms nvidia-lts nvidia-open nvidia-open-dkms nvidia-open-lts nvidia-utils; do
+    grep -qx "Target = $t" "$h"
+  done
+  grep -qx "Operation = Install" "$h"
+  grep -qx "Operation = Upgrade" "$h"
+}
+
+@test "hook do hwdetect roda --hook só para o próprio pacote" {
+  local h=packages/xinguos/xinguos-hwdetect/90-xinguos-hwdetect.hook
+  grep -qx "Target = xinguos-hwdetect" "$h"
+  [ "$(grep -c '^Target' "$h")" -eq 1 ]
+  grep -qx "When = PostTransaction" "$h"
+  grep -qx "Exec = /usr/bin/xinguos-hwdetect --hook" "$h"
+}
