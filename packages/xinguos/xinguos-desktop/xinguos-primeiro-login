@@ -37,9 +37,9 @@ atalho kwin -- "Window Minimize" "Meta+Down,Meta+PgDown,Minimizar janela"
 atalho kwin -- "Window Quick Tile Left" "Meta+Left,Meta+Left,Encaixar à esquerda"
 atalho kwin -- "Window Quick Tile Right" "Meta+Right,Meta+Right,Encaixar à direita"
 atalho kwin -- "Overview" "Meta+Tab,Meta+W,Visão geral"
-atalho kwin -- "KrohnkiteNextLayout" 'Meta+T,Meta+\\,Krohnkite: alternar flutuante/lado a lado'
+atalho kwin -- "KrohnkiteNextLayout" "Meta+T,none,Krohnkite: alternar flutuante/lado a lado"
 atalho kwin -- "KrohnkiteToggleFloat" "Meta+F,Meta+F,Krohnkite: flutuar janela"
-# (o 2º campo é o "padrão" usado só no "restaurar padrão"; "\\" e "," precisariam de escape no KConfig)
+# (o 2º campo é o "padrão", usado só no "restaurar padrão"; onde o original tem  ou vírgula, que exigem escape no KConfig, fica "none")
 # atalhos do Krohnkite que brigam com os do Windows (Win+L, Win+D, Win+I, Win+R, Win+. ...)
 atalho kwin -- "KrohnkiteTileLayout" "none,Meta+T,Krohnkite: layout lado a lado"
 atalho kwin -- "KrohnkiteMonocleLayout" "none,Meta+M,Krohnkite: layout monocle"
