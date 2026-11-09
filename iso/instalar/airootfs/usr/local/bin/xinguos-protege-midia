@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+# xinguos-protege-midia — roda no live da ISO de instalação ANTES do SDDM e deixa
+# SOMENTE LEITURA:
+#   - o disco de onde o live bootou (origem de /run/archiso/bootmnt; com o Ventoy é
+#     /dev/mapper/ventoy, e o lsblk -s sobe até o disco físico);
+#   - todo disco com partição de rótulo Ventoy ou VTOYEFI (o HD/pendrive do Ventoy,
+#     que guarda backups e ISOs e NUNCA pode ser apagado pelo instalador).
+# Assim o Calamares não consegue escrever nesses discos nem se o usuário escolher errado.
+# A lista protegida fica em /run/xinguos/midia-protegida.
+# Ambiente (testes): XINGUOS_PROTEGIDOS (arquivo da lista), XINGUOS_BOOTMNT.
+set -uo pipefail
+
+lista=${XINGUOS_PROTEGIDOS:-/run/xinguos/midia-protegida}
+bootmnt=${XINGUOS_BOOTMNT:-/run/archiso/bootmnt}
+
+discos_acima() {  # <dispositivo> → disco(s) físico(s) por baixo dele
+  lsblk -snlpo PATH,TYPE "$1" 2>/dev/null | awk '$2 == "disk" { print $1 }'
+}
+
+discos=()
+if origem=$(findmnt -no SOURCE "$bootmnt" 2>/dev/null) && [ -n "$origem" ]; then
+  while IFS= read -r d; do discos+=("$d"); done < <(discos_acima "$origem")
+fi
+while read -r caminho rotulo; do
+  case "$rotulo" in
+    Ventoy | VTOYEFI)
+      while IFS= read -r d; do discos+=("$d"); done < <(discos_acima "$caminho")
+      ;;
+  esac
+done < <(lsblk -nlpo PATH,LABEL 2>/dev/null)
+
+mkdir -p "$(dirname "$lista")"
+: > "$lista"
+mapfile -t unicos < <(printf '%s\n' "${discos[@]}" | awk 'NF && !visto[$0]++')
+for d in "${unicos[@]}"; do
+  # o disco e cada partição dele
+  while IFS= read -r parte; do
+    blockdev --setro "$parte" || echo "xinguos-protege-midia: aviso: não consegui proteger $parte" >&2
+  done < <(lsblk -nlpo PATH "$d" 2>/dev/null)
+  echo "$d" >> "$lista"
+  echo "xinguos-protege-midia: $d agora é somente leitura (o instalador não consegue apagá-lo)"
+done
+exit 0

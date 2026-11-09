@@ -12,6 +12,9 @@ fpr=$2
 if ! grep -q '^\[multilib\]' /etc/pacman.conf; then
   printf '\n[multilib]\nInclude = /etc/pacman.d/mirrorlist\n' >> /etc/pacman.conf
 fi
+# (só no CI) download de release do GitHub às vezes fica lento por uns segundos: sem o
+# timeout, o pacman espera em vez de derrubar o teste
+grep -q '^DisableDownloadTimeout' /etc/pacman.conf || sed -i '/^\[options\]/a DisableDownloadTimeout' /etc/pacman.conf
 # passos 1 a 3 do README
 bash "$(dirname "$0")/../tools/confiar-xinguos.sh" "$url" "$fpr"
 pacman -Q xinguos-keyring
@@ -41,4 +44,8 @@ XINGUOS_FOCO_DB=/tmp/f.db XINGUOS_FOCO_CONFIG=/tmp/foco.toml dbus-run-session --
   busctl --user call org.xinguos.Foco /org/xinguos/Foco org.xinguos.Foco Totais
   r=$?; kill $d; wait $d; exit $r' | tee /tmp/foco.txt
 grep -q '^s ' /tmp/foco.txt
+# instalador: o pacote existe e traz os módulos em Python (unpackfs, bootloader...)
+pacman -Sw --noconfirm calamares
+pacman -Qlp /var/cache/pacman/pkg/calamares-*.pkg.tar.zst | grep -q '/unpackfs/main.py$'
+pacman -Qlp /var/cache/pacman/pkg/calamares-*.pkg.tar.zst | grep -q '/bootloader/main.py$'
 echo "smoke-repo: ok"

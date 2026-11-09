@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Wallpaper provisório do XInguOS -->
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+  <defs>
+    <linearGradient id="ceu" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0b1320"/>
+      <stop offset="0.55" stop-color="#11263a"/>
+      <stop offset="1" stop-color="#0e3b43"/>
+    </linearGradient>
+    <radialGradient id="brilho" cx="0.72" cy="0.38" r="0.55">
+      <stop offset="0" stop-color="#2ec4b6" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#2ec4b6" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#ceu)"/>
+  <rect width="1920" height="1080" fill="url(#brilho)"/>
+  <g transform="translate(1180 230) scale(2.4)" opacity="0.9">
+    <circle cx="128" cy="128" r="120" fill="none" stroke="#2ec4b6" stroke-width="5" opacity="0.6"/>
+    <path d="M72 64 L104 64 L184 192 L152 192 Z" fill="#2ec4b6"/>
+    <path d="M184 64 L152 64 L118 118 L134 144 Z" fill="#5eead4"/>
+    <path d="M72 192 L104 192 L122 163 L106 137 Z" fill="#5eead4"/>
+  </g>
+  <path d="M0 860 C 420 780 760 960 1180 880 S 1700 820 1920 900 L1920 1080 L0 1080 Z" fill="#0b1320" opacity="0.55"/>
+</svg>

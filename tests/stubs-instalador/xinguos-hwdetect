@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# stub do xinguos-hwdetect no teste do instalador: --detectar responde o perfil $PERFIL
+echo "xinguos-hwdetect $*" >> "$LOG"
+if [ "${1:-}" = --detectar ]; then
+  printf 'perfil=%s\npacotes=\ngaming=completo\naviso=\n' "$PERFIL"
+fi
+exit 0

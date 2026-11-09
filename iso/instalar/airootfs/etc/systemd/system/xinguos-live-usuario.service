@@ -1,0 +1,10 @@
+[Unit]
+Description=XInguOS ao vivo: usuário live e caminho do squashfs para o instalador
+Before=display-manager.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/xinguos-live-usuario
+
+[Install]
+WantedBy=multi-user.target

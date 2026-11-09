@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# xinguos-instalar — abre o Calamares SÓ se o disco do Ventoy/pendrive estiver somente leitura.
+# Roda o xinguos-protege-midia de novo (o HD pode ter resetado ou sido plugado depois do boot)
+# e confere, por conta própria, cada disco com partição Ventoy/VTOYEFI e o disco de onde o
+# live bootou. Se algum continuar gravável, não abre o instalador.
+set -uo pipefail
+
+bootmnt=${XINGUOS_BOOTMNT:-/run/archiso/bootmnt}
+
+discos_acima() {
+  lsblk -snlpo PATH,TYPE "$1" 2>/dev/null | awk '$2 == "disk" { print $1 }'
+}
+
+xinguos-protege-midia >/dev/null 2>&1 || true
+
+discos=()
+if origem=$(findmnt -no SOURCE "$bootmnt" 2>/dev/null) && [ -n "$origem" ]; then
+  while IFS= read -r d; do discos+=("$d"); done < <(discos_acima "$origem")
+fi
+while read -r caminho rotulo; do
+  case "$rotulo" in
+    Ventoy | VTOYEFI) while IFS= read -r d; do discos+=("$d"); done < <(discos_acima "$caminho") ;;
+  esac
+done < <(lsblk -nlpo PATH,LABEL 2>/dev/null)
+
+inseguros=()
+for d in $(printf '%s\n' "${discos[@]}" | awk 'NF && !visto[$0]++'); do
+  [ "$(blockdev --getro "$d" 2>/dev/null)" = 1 ] || inseguros+=("$d")
+done
+
+if [ ${#inseguros[@]} -gt 0 ]; then
+  msg="Por segurança, o instalador não vai abrir: o disco de onde o XInguOS ao vivo bootou (${inseguros[*]}) não está protegido contra gravação, e ele guarda o Ventoy e os seus arquivos. Reinicie o live e tente de novo."
+  kdialog --error "$msg" --title "Instalar o XInguOS" 2>/dev/null || echo "$msg" >&2
+  exit 1
+fi
+exec calamares "$@"

@@ -1,0 +1,166 @@
+#!/usr/bin/env bash
+# pos-instalacao [--raiz <dir>] — roda no chroot do sistema recém-copiado pelo Calamares
+# (módulo shellprocess@pos) e transforma a cópia do live num sistema instalado:
+#   1. tira tudo que é só do live (usuário live, autologin, instalador, proteção do disco)
+#   2. remove pacotes do live (calamares, mkinitcpio-archiso, o kernel "linux" se houver o zen)
+#   3. driver de vídeo pelo xinguos-hwdetect
+#   4. presets do mkinitcpio + vmlinuz em /boot (o archiso esvazia o /boot) + initramfs
+#   5. snapper para / (template xinguos)
+# Idempotente. Sai com ≠ 0 só se o essencial falhar (kernel/initramfs); o resto só avisa.
+# --raiz serve aos testes: os arquivos são lidos/escritos sob <dir>, e os comandos
+# (pacman, mkinitcpio, userdel, passwd, xinguos-hwdetect) vêm do PATH.
+set -uo pipefail
+
+R=""
+if [ "${1:-}" = --raiz ]; then R=${2:?uso: pos-instalacao [--raiz <dir>]}; fi
+
+avisos=0
+aviso() { echo "pos-instalacao: aviso: $*" >&2; avisos=$((avisos + 1)); }
+die() { echo "pos-instalacao: ERRO: $*" >&2; exit 1; }
+instalado() { pacman -Qq "$1" >/dev/null 2>&1; }
+
+echo "==> pos-instalacao: limpando o que é só do live"
+# 1. arquivos do live
+for f in \
+  /etc/sddm.conf.d/10-xinguos-live.conf \
+  /etc/sudoers.d/10-xinguos-live \
+  /etc/systemd/system/xinguos-live-usuario.service \
+  /etc/systemd/system/multi-user.target.wants/xinguos-live-usuario.service \
+  /etc/systemd/system/xinguos-protege-midia.service \
+  /etc/systemd/system/multi-user.target.wants/xinguos-protege-midia.service \
+  /usr/local/bin/xinguos-live-usuario \
+  /usr/local/bin/xinguos-protege-midia \
+  /etc/skel/Desktop/instalar-xinguos.desktop \
+  /usr/share/applications/instalar-xinguos.desktop \
+  /etc/mkinitcpio.conf.d/archiso.conf \
+  /etc/systemd/system/getty@tty1.service.d/autologin.conf \
+  /etc/systemd/journald.conf.d/volatile-storage.conf \
+  /root/.automated_script.sh \
+  /root/.zlogin \
+  /usr/local/bin/xinguos-instalar \
+  /etc/udev/rules.d/90-xinguos-protege-midia.rules \
+  /etc/ssh/sshd_config.d/10-archiso.conf \
+  /etc/systemd/network/20-ethernet.network \
+  /etc/systemd/networkd.conf.d/ipv6-privacy-extensions.conf \
+  /etc/systemd/resolved.conf.d/archiso.conf \
+  /etc/systemd/system-generators/systemd-gpt-auto-generator \
+  /etc/systemd/system/multi-user.target.wants/sshd.service \
+  /etc/systemd/system/multi-user.target.wants/systemd-networkd.service \
+  /etc/systemd/system/multi-user.target.wants/hv_fcopy_daemon.service \
+  /etc/systemd/system/multi-user.target.wants/hv_kvp_daemon.service \
+  /etc/systemd/system/multi-user.target.wants/hv_vss_daemon.service \
+  /etc/systemd/system/multi-user.target.wants/vboxservice.service \
+  /etc/systemd/system/multi-user.target.wants/vmtoolsd.service \
+  /etc/systemd/system/multi-user.target.wants/vmware-vmblock-fuse.service \
+  /etc/systemd/system/sockets.target.wants/systemd-networkd.socket \
+  /etc/systemd/system/network-online.target.wants/systemd-networkd-wait-online.service \
+  /etc/systemd/system/systemd-networkd-wait-online.service.d/wait-for-only-one-interface.conf; do
+  rm -f "$R$f"
+done
+rm -rf "$R/etc/calamares" "$R/usr/lib/xinguos/instalador" "$R/etc/systemd/system/cloud-init.target.wants"
+# (o perfil baseline do archiso liga sshd com senha, systemd-networkd brigando com o
+#  NetworkManager, cloud-init e os serviços de convidado de VM; o resolved fica, o NM usa)
+rmdir "$R/etc/systemd/system/getty@tty1.service.d" 2>/dev/null || true
+
+# o usuário do live (o Calamares proíbe criar outro com esse nome)
+if grep -q '^live:' "$R/etc/passwd" 2>/dev/null; then
+  userdel -r live 2>/dev/null || userdel live || aviso "não consegui remover o usuário live"
+fi
+# root do live não tem senha: no sistema instalado ele fica travado (sudo pelo grupo wheel)
+passwd -l root >/dev/null || aviso "não consegui travar a senha do root"
+
+# 2. pacotes que só servem ao live: os de VM/nuvem do baseline e os do live em si
+vm=()
+for p in cloud-init hyperv open-vm-tools qemu-guest-agent virtualbox-guest-utils-nox; do
+  instalado "$p" && vm+=("$p")
+done
+if [ ${#vm[@]} -gt 0 ]; then
+  pacman -Rns --noconfirm "${vm[@]}" || aviso "não consegui remover: ${vm[*]}"
+fi
+remover=()
+for p in calamares mkinitcpio-archiso; do instalado "$p" && remover+=("$p"); done
+if instalado linux-zen; then
+  for p in linux linux-headers; do instalado "$p" && remover+=("$p"); done
+fi
+if [ ${#remover[@]} -gt 0 ]; then
+  pacman -Rns --noconfirm "${remover[@]}" || aviso "não consegui remover: ${remover[*]}"
+fi
+
+# 2b. chaveiro do pacman: o mkarchiso não cria /etc/pacman.d/gnupg (pacstrap -G); sem ele
+#     nenhum pacman -S/-Syu funciona com SigLevel Required
+echo "==> pos-instalacao: chaveiro do pacman"
+if pacman-key --init && pacman-key --populate archlinux xinguos; then
+  :
+else
+  aviso "chaveiro do pacman: rode depois sudo pacman-key --init && sudo pacman-key --populate"
+fi
+
+# 3. driver de vídeo (spec 3): o live traz o 580xx; outra GPU troca pelo driver dela
+echo "==> pos-instalacao: placa de vídeo"
+deteccao=$(xinguos-hwdetect --detectar 2>/dev/null) || aviso "xinguos-hwdetect --detectar falhou"
+perfil=$(sed -n 's/^perfil=//p' <<<"$deteccao")
+echo "    perfil: ${perfil:-?}"
+case "$perfil" in
+  nvidia-580xx)
+    mkdir -p "$R/etc/modprobe.d"
+    echo "options nvidia_drm modeset=1" > "$R/etc/modprobe.d/xinguos-nvidia.conf"
+    xinguos-hwdetect --hook || true
+    ;;
+  nvidia-open | amd | intel)
+    nv=()
+    for p in nvidia-580xx-dkms nvidia-580xx-utils lib32-nvidia-580xx-utils; do instalado "$p" && nv+=("$p"); done
+    if [ ${#nv[@]} -gt 0 ]; then
+      pacman -Rdd --noconfirm "${nv[@]}" || aviso "não consegui remover o driver 580xx"
+    fi
+    # precisa de internet; sem ela, o hook do pacman lembra de rodar "sudo xinguos-hwdetect --apply"
+    if pacman -Sy; then
+      { yes || true; } | xinguos-hwdetect --apply || aviso "driver de $perfil não instalado (sem internet?): rode depois sudo xinguos-hwdetect --apply"
+    else
+      aviso "sem internet: rode depois sudo xinguos-hwdetect --apply"
+    fi
+    ;;
+  *)
+    xinguos-hwdetect --hook || true
+    ;;
+esac
+
+# 4. kernels: preset normal do mkinitcpio + vmlinuz em /boot + initramfs (essencial)
+echo "==> pos-instalacao: kernels e initramfs"
+modelo="$R/usr/share/mkinitcpio/hook.preset"
+[ -f "$modelo" ] || die "falta $modelo"
+kernels=0
+for pb in "$R"/usr/lib/modules/*/pkgbase; do
+  [ -f "$pb" ] || continue
+  base=$(<"$pb")
+  dir=$(dirname "$pb")
+  [ -f "$dir/vmlinuz" ] || continue
+  install -Dm644 "$dir/vmlinuz" "$R/boot/vmlinuz-$base" || die "não consegui copiar o kernel $base"
+  mkdir -p "$R/etc/mkinitcpio.d"
+  sed "s|%PKGBASE%|$base|g" "$modelo" > "$R/etc/mkinitcpio.d/$base.preset" || die "preset de $base"
+  kernels=$((kernels + 1))
+done
+[ "$kernels" -gt 0 ] || die "nenhum kernel encontrado em /usr/lib/modules"
+mkinitcpio -P || die "mkinitcpio -P falhou"
+
+# 5. snapper para / usando o subvolume @snapshots já montado em /.snapshots (sem create-config,
+#    que tentaria criar outro subvolume .snapshots)
+echo "==> pos-instalacao: snapper"
+tpl="$R/usr/share/snapper/config-templates/xinguos"
+if [ -f "$tpl" ]; then
+  mkdir -p "$R/etc/snapper/configs" "$R/etc/conf.d"
+  sed 's|^SUBVOLUME=.*|SUBVOLUME="/"|' "$tpl" > "$R/etc/snapper/configs/root" || aviso "snapper: config"
+  chmod 640 "$R/etc/snapper/configs/root" 2>/dev/null || true
+  if [ -f "$R/etc/conf.d/snapper" ] && grep -q '^SNAPPER_CONFIGS=' "$R/etc/conf.d/snapper"; then
+    sed -i 's|^SNAPPER_CONFIGS=.*|SNAPPER_CONFIGS="root"|' "$R/etc/conf.d/snapper"
+  else
+    echo 'SNAPPER_CONFIGS="root"' >> "$R/etc/conf.d/snapper"
+  fi
+else
+  aviso "template do snapper (xinguos-base) não encontrado"
+fi
+
+# o gpg-agent do pacman-key deixaria o alvo ocupado (o umount do Calamares falharia)
+gpgconf --homedir /etc/pacman.d/gnupg --kill all >/dev/null 2>&1 || true
+
+echo "==> pos-instalacao: pronto ($avisos aviso(s))"
+exit 0

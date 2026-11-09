@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# xinguos-os-release [--raiz <dir>] — grava /etc/os-release do XInguOS.
+# O pacote filesystem é dono de /etc/os-release (link para /usr/lib/os-release, que diz
+# "Arch Linux"); o hook do pacman roda isto depois de cada atualização dele.
+set -euo pipefail
+raiz=""
+if [ "${1:-}" = --raiz ]; then raiz=${2:?uso: xinguos-os-release [--raiz <dir>]}; fi
+alvo="$raiz/etc/os-release"
+mkdir -p "$raiz/etc"
+tmp=$(mktemp "$raiz/etc/.os-release.XXXXXX")
+cat > "$tmp" <<'FIM'
+NAME="XInguOS"
+PRETTY_NAME="XInguOS"
+ID=xinguos
+ID_LIKE=arch
+BUILD_ID=rolling
+ANSI_COLOR="38;2;46;196;182"
+HOME_URL="https://github.com/Guilherme-XHP/xinguos"
+DOCUMENTATION_URL="https://github.com/Guilherme-XHP/xinguos"
+BUG_REPORT_URL="https://github.com/Guilherme-XHP/xinguos/issues"
+LOGO=xinguos
+FIM
+chmod 644 "$tmp"
+# mv troca o próprio link (rename), sem seguir para /usr/lib/os-release
+mv -f "$tmp" "$alvo"

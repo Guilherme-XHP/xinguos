@@ -1,0 +1,12 @@
+[Unit]
+Description=XInguOS ao vivo: disco do pendrive/Ventoy somente leitura (o instalador não consegue apagá-lo)
+Before=display-manager.service
+Wants=systemd-udev-settle.service
+After=systemd-udev-settle.service local-fs.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/xinguos-protege-midia
+
+[Install]
+WantedBy=multi-user.target

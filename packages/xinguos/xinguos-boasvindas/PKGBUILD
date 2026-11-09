@@ -1,0 +1,19 @@
+pkgname=xinguos-boasvindas
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="Bem-vindo ao XInguOS: instala apps fora da ISO, Proton-GE, Android SDK e mais no primeiro login"
+arch=(any)
+url="https://github.com/Guilherme-XHP/xinguos"
+license=(GPL-3.0-or-later)
+depends=(python pyside6 qt6-svg konsole flatpak curl libarchive xinguos-branding)
+
+# o código mora junto deste PKGBUILD: usa $startdir
+package() {
+  cd "$startdir"
+  local lib="$pkgdir/usr/lib/xinguos/boasvindas/xinguos_boasvindas"
+  install -dm755 "$lib"
+  install -m644 xinguos_boasvindas/*.py xinguos_boasvindas/Main.qml "$lib/"
+  install -Dm755 xinguos-boasvindas "$pkgdir/usr/bin/xinguos-boasvindas"
+  install -Dm644 org.xinguos.boasvindas.desktop "$pkgdir/usr/share/applications/org.xinguos.boasvindas.desktop"
+  install -Dm644 xinguos-boasvindas-autostart.desktop "$pkgdir/etc/xdg/autostart/xinguos-boasvindas.desktop"
+}

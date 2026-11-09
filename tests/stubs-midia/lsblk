@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# stub do lsblk: lê a tabela $FAKE_LSBLK (linhas "PATH TYPE LABEL PAI", LABEL "-" = vazio)
+# e responde às 3 formas que o xinguos-protege-midia usa.
+tabela() { grep -v '^#' "$FAKE_LSBLK"; }
+case "$*" in
+  "-nlpo PATH,LABEL")
+    tabela | awk '{ print $1, ($3 == "-" ? "" : $3) }' ;;
+  "-snlpo PATH,TYPE "*)  # o dispositivo e os "pais" dele até o disco
+    dev=${*: -1}
+    while [ -n "$dev" ] && [ "$dev" != "-" ]; do
+      linha=$(tabela | awk -v d="$dev" '$1 == d')
+      [ -n "$linha" ] || exit 32
+      awk '{ print $1, $2 }' <<<"$linha"
+      dev=$(awk '{ print $4 }' <<<"$linha")
+    done ;;
+  "-nlpo PATH "*)  # o disco e as partições dele
+    disco=${*: -1}
+    echo "$disco"
+    tabela | awk -v d="$disco" '$4 == d { print $1 }' ;;
+  *) echo "stub lsblk: forma não suportada: $*" >&2; exit 2 ;;
+esac

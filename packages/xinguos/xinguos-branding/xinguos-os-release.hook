@@ -1,0 +1,11 @@
+[Trigger]
+Type = Package
+Operation = Install
+Operation = Upgrade
+Target = filesystem
+Target = xinguos-branding
+
+[Action]
+Description = XInguOS: gravando /etc/os-release...
+When = PostTransaction
+Exec = /usr/lib/xinguos/xinguos-os-release
