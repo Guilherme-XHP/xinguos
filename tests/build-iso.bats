@@ -68,3 +68,10 @@ setup_file() {
 @test "ISO declara pipewire-jack (senão o pacstrap escolhe jack2 e conflita com o xinguos-base)" {
   grep -qx pipewire-jack "$PERFIL/packages.x86_64"
 }
+
+@test "live tem espelhos do pacman configurados (senão pacman -Sy falha)" {
+  run grep -E '^Server = https://' "$PERFIL/airootfs/etc/pacman.d/mirrorlist"
+  echo "$output"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *'geo.mirror.pkgbuild.com/$repo/os/$arch'* ]]
+}
