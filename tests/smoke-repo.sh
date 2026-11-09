@@ -33,6 +33,7 @@ if grep -qx kdeconnect /tmp/arvore.txt; then echo "smoke-repo: xinguos-desktop/a
 pacman -Sw --noconfirm xinguos-desktop
 # foco: instala de verdade e o daemon responde no D-Bus (sem KWin, sem swayidle no container)
 pacman -S --noconfirm xinguos-foco
+# shellcheck disable=SC2016 # o script interno é expandido pelo sh de dentro do dbus-run-session
 XINGUOS_FOCO_DB=/tmp/f.db XINGUOS_FOCO_CONFIG=/tmp/foco.toml dbus-run-session -- sh -c '
   xinguos-foco & d=$!
   for _ in $(seq 1 50); do busctl --user status org.xinguos.Foco >/dev/null 2>&1 && break; sleep 0.2; done
