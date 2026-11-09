@@ -9,6 +9,7 @@ xinguos/xinguos-kernels
 xinguos/xinguos-base
 xinguos/kwin-scripts-krohnkite
 xinguos/xinguos-branding
+xinguos/xinguos-boasvindas
 xinguos/xinguos-foco
 xinguos/xinguos-desktop
 xinguos/xinguos-apps

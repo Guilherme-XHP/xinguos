@@ -12,7 +12,7 @@ depends=(
   konsole dolphin kate ark gwenview okular spectacle
   appmenu-gtk-module kwin-scripts-krohnkite
   polkit-kde-agent kde-gtk-config kwallet-pam
-  xinguos-foco xinguos-branding
+  xinguos-foco xinguos-branding xinguos-boasvindas
 )
 backup=(etc/xdg/kdeglobals etc/xdg/baloofilerc)
 install=xinguos-desktop.install
