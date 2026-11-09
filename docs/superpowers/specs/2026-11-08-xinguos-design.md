@@ -289,6 +289,16 @@ O Xingu delegou o design do painel ("deixar você fazendo o rolê todo"). Estas 
 - **Avisos:** limite diário e a pergunta do autotile (6.4) usam `org.freedesktop.Notifications`, com botões de ação. Quem faz é o próprio daemon, sem Python.
 - **Prioridade:** como na 7.2, via `CPUWeight`/`IOWeight` no `app-*.scope` do app em foco. Jogos lançados pelo Steam herdam o scope do Steam, então o Steam inteiro ganha peso enquanto o jogo está em foco.
 - **Ficam para depois (YAGNI):** widget na barra mostrando o app em foco; bloquear o app quando o limite estoura (o spec diz que só avisa); exportar dados.
+- **Daemon em Python, não em Rust** (muda a 7.2):
+  - Binário compilado muda de bytes quando a toolchain do Arch atualiza, e a trava de conteúdo do repositório (Plano 2) passaria a falhar o CI sem mudança real.
+  - Não há Rust na máquina do Xingu para gerar o `Cargo.lock`.
+  - Python (`asyncio` + `python-dbus-fast` + `sqlite3` + `tomllib`) é reprodutível e testável com pytest.
+  - Custo: ~25 MB de RAM em vez de ~3 MB.
+- **Sem a pergunta "Organizar X em mosaico?"** (muda a 6.4):
+  - O KWin e o Krohnkite não informam se o autotile está ligado, então o daemon não teria como perguntar só nessa hora.
+  - No lugar dela, a aba "Prioridades e limites" ganha uma coluna **Autotile (sim/não)** por app. "Não" acrescenta o app ao `ignoreClass` do Krohnkite, e vale a partir do próximo login.
+  - O estado do Win+T **não** sobrevive ao reiniciar: o Krohnkite volta para o layout flutuante.
+- **I/O por usuário:** o `xinguos-base` passa a delegar o controlador `io` para o `user@.service` (`Delegate=cpu cpuset io memory pids`). Sem isso, o `IOWeight` nos apps do usuário é ignorado.
 
 ## 8. Apps
 
