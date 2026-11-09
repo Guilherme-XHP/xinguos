@@ -1,0 +1,3 @@
+#!/bin/sh
+# xinguos-boasvindas: janela "Bem-vindo ao XInguOS"
+exec env PYTHONPATH=/usr/lib/xinguos/boasvindas python3 -m xinguos_boasvindas "$@"

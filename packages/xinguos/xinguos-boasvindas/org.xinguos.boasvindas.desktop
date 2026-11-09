@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Bem-vindo ao XInguOS
+GenericName=Primeiros passos
+Comment=Instalar apps, Proton-GE, Android SDK e mais
+Exec=xinguos-boasvindas
+Icon=xinguos
+Categories=System;Settings;
+Keywords=boas-vindas;welcome;instalar;apps;proton;
