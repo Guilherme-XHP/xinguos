@@ -157,3 +157,9 @@ aj() {
   aj java-11-openjdk
   [ ! -s "$AJ_LOG" ]
 }
+
+@test "jogos do Steam (steam_app_*) nunca são organizados pelo autotile" {
+  preparar_login
+  "$PL"
+  grep -F -- "--key ignoreClass" "$KWRITE_LOG" | grep -qF ",[steam_app_]"
+}
