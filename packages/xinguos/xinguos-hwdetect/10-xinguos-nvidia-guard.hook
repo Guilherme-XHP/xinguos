@@ -1,0 +1,19 @@
+# XInguOS: impede instalar um driver NVIDIA sem suporte a Maxwell/Pascal/Volta
+# (ex.: GTX 1060) por cima do 580xx. Ver xinguos-hwdetect --guard.
+[Trigger]
+Operation = Install
+Operation = Upgrade
+Type = Package
+Target = nvidia
+Target = nvidia-dkms
+Target = nvidia-lts
+Target = nvidia-open
+Target = nvidia-open-dkms
+Target = nvidia-open-lts
+Target = nvidia-utils
+
+[Action]
+Description = XInguOS: conferindo se o driver NVIDIA é compatível com a sua GPU...
+When = PreTransaction
+Exec = /usr/bin/xinguos-hwdetect --guard
+AbortOnFail

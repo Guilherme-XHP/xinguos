@@ -5,6 +5,7 @@
 #   xinguos-hwdetect --detectar                    imprime perfil=, pacotes=, gaming=, aviso=
 #   xinguos-hwdetect --apply [--forcar <perfil>]   instala o driver do perfil (root)
 #   xinguos-hwdetect --hook                        usado pelo hook do pacman: só detecta e avisa
+#   xinguos-hwdetect --guard                       sai 1 se a GPU só aceita o driver 580xx (hook do guard)
 #
 # ambiente (testes): XINGUOS_LSPCI_ARQUIVO, XINGUOS_ETC, XINGUOS_MODPROBE_DIR
 set -euo pipefail
@@ -135,7 +136,15 @@ case "${1:-}" in
     hook || true
     exit 0
     ;;
+  --guard)
+    # Chamado pelo hook PreTransaction 10-xinguos-nvidia-guard: cancela a troca do 580xx
+    # por um driver NVIDIA que não suporta Maxwell/Pascal/Volta.
+    if [ "$(detectar_perfil)" = nvidia-580xx ]; then
+      echo "xinguos-nvidia-guard: esta GPU (Maxwell/Pascal/Volta) só funciona com o driver 580xx. A transação foi cancelada para não deixar o sistema sem vídeo. Use os pacotes nvidia-580xx-* do [xinguos]." >&2
+      exit 1
+    fi
+    ;;
   *)
-    die "uso: xinguos-hwdetect --detectar | --apply [--forcar <perfil>] | --hook"
+    die "uso: xinguos-hwdetect --detectar | --apply [--forcar <perfil>] | --hook | --guard"
     ;;
 esac

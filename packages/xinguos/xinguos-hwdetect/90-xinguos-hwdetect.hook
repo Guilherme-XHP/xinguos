@@ -1,0 +1,12 @@
+# XInguOS: depois de instalar/atualizar o xinguos-hwdetect, detecta a GPU e avisa
+# se falta o driver (o hook não pode instalar nada: o banco do pacman está travado).
+[Trigger]
+Operation = Install
+Operation = Upgrade
+Type = Package
+Target = xinguos-hwdetect
+
+[Action]
+Description = XInguOS: detectando a GPU...
+When = PostTransaction
+Exec = /usr/bin/xinguos-hwdetect --hook

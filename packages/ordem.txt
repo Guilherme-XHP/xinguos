@@ -3,3 +3,4 @@ aur/nvidia-580xx-utils
 aur/lib32-nvidia-580xx-utils
 aur/gamescope-session-git
 aur/gamescope-session-steam-git
+xinguos/xinguos-hwdetect
