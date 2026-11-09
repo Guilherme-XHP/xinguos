@@ -63,3 +63,9 @@ Itens pequenos que as revisões acharam e que ficaram para depois. Quem pegar um
 - O Plasma pode cancelar o logout (app com trabalho não salvo). Nesse caso a troca fica gravada para o próximo logout.
 - Modo compatível: um launcher de fora do Steam pode ser organizado pelo Krohnkite (o Steam e os jogos estão no `ignoreClass`).
 - Marco 0 teste 2 (gamescope na GTX 1060) ainda não foi feito. A 1060 começa no modo compatível.
+
+## Teste no PC real (2026-11-09) e tema XHP
+
+- Gaming Mode no live: "abria, não fazia nada e voltava pro desktop". O `gaming-falhas` não existia, então a sessão Gaming nem chegou a terminar pelo script. Causa não achada. A sessão agora grava `~/.local/state/xinguos/gaming-sessao.log`, e o `xinguos-teste` junta esse log com o do SDDM e o do Steam.
+- Estudar o `gamescope-session-cachyos` (CachyOS) para o modo completo, para quando houver GPU Turing+/AMD. O Bazzite não dá Gaming Mode para GTX 10xx.
+- Materia-Color e Materia-Dark são de 2022 (Plasma 5). Conferir no PC se o painel e a decoração ficam certos no Plasma 6.
