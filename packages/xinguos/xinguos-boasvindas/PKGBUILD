@@ -5,7 +5,7 @@ pkgdesc="Bem-vindo ao XInguOS: instala apps fora da ISO, Proton-GE, Android SDK 
 arch=(any)
 url="https://github.com/Guilherme-XHP/xinguos"
 license=(GPL-3.0-or-later)
-depends=(python pyside6 konsole flatpak curl libarchive xinguos-branding)
+depends=(python pyside6 qt6-svg konsole flatpak curl libarchive xinguos-branding)
 
 # o código mora junto deste PKGBUILD: usa $startdir
 package() {
