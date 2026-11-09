@@ -1,0 +1,78 @@
+#!/usr/bin/env bash
+# xinguos-hwdetect — detecta a GPU e escolhe o driver certo para o XInguOS.
+#
+# uso:
+#   xinguos-hwdetect --detectar        imprime perfil=, pacotes=, gaming=, aviso=
+#
+# ambiente (testes): XINGUOS_LSPCI_ARQUIVO — lê a saída de "lspci -nn" deste arquivo
+set -euo pipefail
+
+die() { echo "xinguos-hwdetect: $*" >&2; exit 2; }
+
+ler_lspci() {
+  if [ -n "${XINGUOS_LSPCI_ARQUIVO:-}" ]; then
+    cat "$XINGUOS_LSPCI_ARQUIVO"
+  else
+    lspci -nn
+  fi
+}
+
+# Uma linha "vendor:device" por GPU (classes 0300 VGA, 0302 3D, 0380 display).
+gpus() {
+  # o vendor:device é o ÚLTIMO [xxxx:xxxx] da linha (o .* guloso garante isso)
+  ler_lspci | grep -E '\[03(00|02|80)\]' | sed -E 's/.*\[([0-9a-f]{4}:[0-9a-f]{4})\].*/\1/' || true
+}
+
+# Define as variáveis perfil, pacotes, gaming e aviso a partir do perfil dado.
+dados_do_perfil() {
+  perfil=$1
+  pacotes=""
+  gaming=compativel
+  aviso=""
+  case "$perfil" in
+    nvidia-580xx) pacotes="nvidia-580xx-dkms nvidia-580xx-utils lib32-nvidia-580xx-utils" ;;
+    nvidia-open) pacotes="nvidia-open-dkms nvidia-utils lib32-nvidia-utils"; gaming=completo ;;
+    amd) pacotes="mesa lib32-mesa vulkan-radeon lib32-vulkan-radeon"; gaming=completo ;;
+    intel) pacotes="mesa lib32-mesa vulkan-intel lib32-vulkan-intel"; gaming=completo ;;
+    varias) aviso="mais de uma GPU encontrada; nada foi instalado. Para escolher, rode: sudo xinguos-hwdetect --apply --forcar <perfil>" ;;
+    nvidia-legada) aviso="GPU NVIDIA antiga demais para o driver 580; usando o driver livre (nouveau)" ;;
+    desconhecida) aviso="nenhuma GPU reconhecida; nada foi instalado" ;;
+    *) die "perfil inválido: $perfil" ;;
+  esac
+}
+
+detectar_perfil() {
+  local lista n vendor device id
+  lista=$(gpus)
+  n=$(printf '%s' "$lista" | grep -c . || true)
+  if [ "$n" -eq 0 ]; then echo desconhecida; return; fi
+  if [ "$n" -gt 1 ]; then echo varias; return; fi
+  vendor=${lista%%:*}
+  device=${lista##*:}
+  case "$vendor" in
+    10de)
+      id=$((16#$device))
+      if [ "$id" -lt $((16#1340)) ]; then echo nvidia-legada
+      elif [ "$id" -lt $((16#1E00)) ]; then echo nvidia-580xx
+      else echo nvidia-open
+      fi
+      ;;
+    1002) echo amd ;;
+    8086) echo intel ;;
+    *) echo desconhecida ;;
+  esac
+}
+
+imprimir() {
+  printf 'perfil=%s\npacotes=%s\ngaming=%s\naviso=%s\n' "$perfil" "$pacotes" "$gaming" "$aviso"
+}
+
+case "${1:-}" in
+  --detectar)
+    dados_do_perfil "$(detectar_perfil)"
+    imprimir
+    ;;
+  *)
+    die "uso: xinguos-hwdetect --detectar"
+    ;;
+esac
