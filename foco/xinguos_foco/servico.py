@@ -16,7 +16,7 @@ from dbus_fast.aio import MessageBus
 from dbus_fast.constants import NameFlag, RequestNameReply
 from dbus_fast.service import ServiceInterface, method
 
-from .banco import Banco
+from .banco import Banco, caminho_padrao
 from .config import caminhos_padrao
 from .nucleo import Nucleo
 from .rastreador import LIMITE_OCIOSO
@@ -138,16 +138,9 @@ async def notificar(bus: MessageBus, nome: str, usado: int, limite: int) -> None
         log.warning("notificação do limite de %s falhou: %s", nome, r.body)
 
 
-def caminho_banco() -> Path:
-    if os.environ.get("XINGUOS_FOCO_DB"):
-        return Path(os.environ["XINGUOS_FOCO_DB"])
-    base = Path(os.environ.get("XDG_DATA_HOME") or Path.home() / ".local/share")
-    return base / "xinguos" / "foco.db"
-
-
 async def rodar(db=None, sistema=None, usuario=None, parar=None, intervalo: float = INTERVALO) -> int:
     sis_padrao, usu_padrao = caminhos_padrao()
-    banco = Banco(db or caminho_banco())
+    banco = Banco(db or caminho_padrao())
     nucleo = Nucleo(banco, sistema or sis_padrao, usuario or usu_padrao, executar=_executar)
     bus = await MessageBus(bus_type=BusType.SESSION).connect()
     bus.export(CAMINHO, Interface(nucleo))

@@ -93,3 +93,11 @@ class Banco:
 
     def fechar(self) -> None:
         self.con.close()
+
+
+def caminho_padrao() -> Path:
+    """${XINGUOS_FOCO_DB} ou ${XDG_DATA_HOME:-~/.local/share}/xinguos/foco.db."""
+    if os.environ.get("XINGUOS_FOCO_DB"):
+        return Path(os.environ["XINGUOS_FOCO_DB"])
+    base = Path(os.environ.get("XDG_DATA_HOME") or Path.home() / ".local/share")
+    return base / "xinguos" / "foco.db"
