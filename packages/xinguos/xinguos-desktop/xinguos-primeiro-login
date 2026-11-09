@@ -1,0 +1,85 @@
+#!/usr/bin/env bash
+# xinguos-primeiro-login — aplica os padrões do desktop do XInguOS UMA vez por usuário.
+#
+# Chamado por /etc/xdg/plasma-workspace/env/xinguos-primeiro-login.sh, antes do
+# kglobalaccel e do plasmashell subirem (por isso os atalhos "pegam" de primeira).
+# O Plasma 6 não lê atalhos padrão de /etc/xdg, então eles são gravados no ~/.config
+# do usuário — só no primeiro login (spec 2.4). Nunca falha: o login tem que seguir.
+set -uo pipefail
+
+MARCA="$HOME/.local/state/xinguos/desktop-v1"
+[ -e "$MARCA" ] && exit 0
+
+avisos=0
+k() {
+  kwriteconfig6 "$@" || { echo "xinguos-primeiro-login: aviso: falhou kwriteconfig6 $*" >&2; avisos=$((avisos + 1)); }
+}
+atalho() { # atalho <grupo...> -- <chave> <valor>
+  local grupos=()
+  while [ "$1" != -- ]; do grupos+=(--group "$1"); shift; done
+  shift
+  k --file kglobalshortcutsrc "${grupos[@]}" --key "$1" "$2"
+}
+
+# 1. layout antigo do Plasma (conta criada antes do XInguOS) vai para backup, para o
+#    plasmashell gerar o layout do tema org.xinguos.desktop
+applets="$HOME/.config/plasma-org.kde.plasma.desktop-appletsrc"
+if [ -e "$applets" ] && [ ! -e "$applets.antes-xinguos" ]; then
+  mv "$applets" "$applets.antes-xinguos"
+fi
+
+# 2. tema do XInguOS no nível do usuário
+k --file kdeglobals --group KDE --key LookAndFeelPackage org.xinguos.desktop
+
+# 3. atalhos estilo Windows (spec 6.3)
+atalho kwin -- "Window Maximize" "Meta+Up,Meta+PgUp,Maximizar janela"
+atalho kwin -- "Window Minimize" "Meta+Down,Meta+PgDown,Minimizar janela"
+atalho kwin -- "Window Quick Tile Left" "Meta+Left,Meta+Left,Encaixar à esquerda"
+atalho kwin -- "Window Quick Tile Right" "Meta+Right,Meta+Right,Encaixar à direita"
+atalho kwin -- "Overview" "Meta+Tab,Meta+W,Visão geral"
+atalho kwin -- "KrohnkiteNextLayout" 'Meta+T,Meta+\\,Krohnkite: alternar flutuante/lado a lado'
+atalho kwin -- "KrohnkiteToggleFloat" "Meta+F,Meta+F,Krohnkite: flutuar janela"
+# (o 2º campo é o "padrão" usado só no "restaurar padrão"; "\\" e "," precisariam de escape no KConfig)
+# atalhos do Krohnkite que brigam com os do Windows (Win+L, Win+D, Win+I, Win+R, Win+. ...)
+atalho kwin -- "KrohnkiteTileLayout" "none,Meta+T,Krohnkite: layout lado a lado"
+atalho kwin -- "KrohnkiteMonocleLayout" "none,Meta+M,Krohnkite: layout monocle"
+atalho kwin -- "KrohnkiteFocusRight" "none,Meta+L,Krohnkite: foco à direita"
+atalho kwin -- "KrohnkiteFocusLeft" "none,Meta+H,Krohnkite: foco à esquerda"
+atalho kwin -- "KrohnkiteFocusUp" "none,Meta+K,Krohnkite: foco acima"
+atalho kwin -- "KrohnkiteFocusDown" "none,Meta+J,Krohnkite: foco abaixo"
+atalho kwin -- "KrohnkiteDecrease" "none,Meta+D,Krohnkite: diminuir"
+atalho kwin -- "KrohnkiteIncrease" "none,Meta+I,Krohnkite: aumentar"
+atalho kwin -- "KrohnkiteRotate" "none,Meta+R,Krohnkite: girar"
+atalho kwin -- "KrohnkiteFocusNext" "none,Meta+.,Krohnkite: próxima janela"
+atalho kwin -- "KrohnkiteFocusPrev" "none,none,Krohnkite: janela anterior"
+atalho services org.kde.krunner.desktop -- _launch "$(printf 'Meta+R\tAlt+Space\tAlt+F2')"
+atalho services systemsettings.desktop -- _launch "Meta+I"
+atalho services org.kde.plasma-systemmonitor.desktop -- _launch "Ctrl+Shift+Esc"
+
+# 4. autotile (Krohnkite): começa FLUTUANTE (autotile desligado, spec 6.4); Win+T alterna
+#    entre flutuante (ordem 1) e lado a lado (ordem 2). Ordem 0 desliga o layout.
+k --file kwinrc --group Plugins --key krohnkiteEnabled true
+k --file kwinrc --group Script-krohnkite --key floatingLayoutOrder 1
+k --file kwinrc --group Script-krohnkite --key tileLayoutOrder 2
+for l in monocle threeColumn spiral quarter stacked columns spread stair binaryTree cascade; do
+  k --file kwinrc --group Script-krohnkite --key "${l}LayoutOrder" 0
+done
+k --file kwinrc --group Script-krohnkite --key enableColumnsLayout false
+k --file kwinrc --group Script-krohnkite --key ignoreClass "krunner,yakuake,spectacle,kded5,xwaylandvideobridge,plasmashell,ksplashqml,org.kde.plasmashell,org.kde.polkit-kde-authentication-agent-1,org.kde.kruler,kruler,kwin_wayland,ksmserver-logout-greeter,kdenlive,org.kde.kdenlive,blender,natron,gimp,obs,com.obsproject.Studio,steam,gamescope"
+
+# 5. Dolphin no estilo Explorer: barra de endereço editável e modo detalhes em toda pasta
+k --file dolphinrc --group General --key EditableUrl true
+k --file dolphinrc --group General --key GlobalViewProps true
+vp="$HOME/.local/share/dolphin/view_properties/global"
+if mkdir -p "$vp" 2>/dev/null; then
+  printf '[Dolphin]\nViewMode=1\nVersion=4\n' > "$vp/.directory" || avisos=$((avisos + 1))
+fi
+
+# 6. Baloo desligado também no nível do usuário; 7. Discover avisa no máximo 1x por dia
+k --file baloofilerc --group "Basic Settings" --key Indexing-Enabled false
+k --file PlasmaDiscoverUpdates --group Global --key RequiredNotificationInterval 86400
+
+# 8. marca: mesmo com avisos, não tenta de novo a cada login
+mkdir -p "$(dirname "$MARCA")" && : > "$MARCA"
+[ "$avisos" -eq 0 ] || echo "xinguos-primeiro-login: aviso: $avisos configuração(ões) não puderam ser aplicadas" >&2
+exit 0

@@ -1,0 +1,16 @@
+{
+    "KPackageStructure": "Plasma/LookAndFeel",
+    "KPlugin": {
+        "Authors": [
+            {
+                "Name": "Xingu"
+            }
+        ],
+        "Description": "Visual padrão do XInguOS: barra no topo estilo Mac e dock flutuante",
+        "Id": "org.xinguos.desktop",
+        "License": "GPL-3.0-or-later",
+        "Name": "XInguOS",
+        "Version": "0.1"
+    },
+    "X-Plasma-APIVersion": "2"
+}

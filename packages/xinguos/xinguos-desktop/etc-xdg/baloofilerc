@@ -1,0 +1,3 @@
+# XInguOS: o Baloo (indexador de arquivos) vem desligado (spec 6.2)
+[Basic Settings]
+Indexing-Enabled=false

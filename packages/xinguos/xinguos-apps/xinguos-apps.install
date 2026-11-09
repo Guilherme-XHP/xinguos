@@ -1,0 +1,5 @@
+post_install() {
+  if [ -z "$(archlinux-java get 2>/dev/null)" ]; then
+    archlinux-java set java-21-openjdk || true
+  fi
+}
