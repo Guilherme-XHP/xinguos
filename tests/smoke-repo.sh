@@ -12,6 +12,9 @@ fpr=$2
 if ! grep -q '^\[multilib\]' /etc/pacman.conf; then
   printf '\n[multilib]\nInclude = /etc/pacman.d/mirrorlist\n' >> /etc/pacman.conf
 fi
+# (só no CI) download de release do GitHub às vezes fica lento por uns segundos: sem o
+# timeout, o pacman espera em vez de derrubar o teste
+grep -q '^DisableDownloadTimeout' /etc/pacman.conf || sed -i '/^\[options\]/a DisableDownloadTimeout' /etc/pacman.conf
 # passos 1 a 3 do README
 bash "$(dirname "$0")/../tools/confiar-xinguos.sh" "$url" "$fpr"
 pacman -Q xinguos-keyring

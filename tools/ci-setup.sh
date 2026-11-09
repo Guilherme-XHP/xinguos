@@ -8,6 +8,9 @@ set -euo pipefail
 if ! grep -q '^\[multilib\]' /etc/pacman.conf; then
   printf '\n[multilib]\nInclude = /etc/pacman.d/mirrorlist\n' >> /etc/pacman.conf
 fi
+# download de release do GitHub às vezes fica lento por uns segundos: sem o timeout,
+# o pacman espera em vez de derrubar o job
+grep -q '^DisableDownloadTimeout' /etc/pacman.conf || sed -i '/^\[options\]/a DisableDownloadTimeout' /etc/pacman.conf
 
 pacman -Syu --noconfirm --needed base-devel git namcap bats shellcheck github-cli archiso nodejs python-pytest python-dbus-fast pyside6 desktop-file-utils qt6-svg python-yaml
 

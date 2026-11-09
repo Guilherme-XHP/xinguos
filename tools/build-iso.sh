@@ -45,6 +45,8 @@ if ! grep -q '^\[multilib\]' "$perfil/pacman.conf"; then
   printf '\n[multilib]\nInclude = /etc/pacman.d/mirrorlist\n' >> "$perfil/pacman.conf"
 fi
 printf '\n[xinguos]\nSigLevel = Required DatabaseOptional\nServer = %s\n' "$url" >> "$perfil/pacman.conf"
+# download de release do GitHub às vezes fica lento: sem o timeout, o mkarchiso espera em vez de falhar
+grep -q '^DisableDownloadTimeout' "$perfil/pacman.conf" || sed -i '/^\[options\]/a DisableDownloadTimeout' "$perfil/pacman.conf"
 install -Dm644 "$perfil/pacman.conf" "$air/etc/pacman.conf"
 
 # 3. só na ISO de teste: protótipo do Marco 0 (os-session-select é o gancho oficial do

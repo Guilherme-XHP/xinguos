@@ -81,3 +81,7 @@ setup_file() {
   run grep -x xinguos-apps "$PERFIL/packages.x86_64"
   [ "$status" -ne 0 ]
 }
+
+@test "pacman do build da ISO sem timeout de download (GitHub lento derrubava o mkarchiso)" {
+  grep -qx DisableDownloadTimeout "$PERFIL/pacman.conf"
+}
