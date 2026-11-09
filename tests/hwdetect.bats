@@ -67,3 +67,73 @@ detectar() {
     [ "$(printf '%s\n' "$output" | wc -l)" -eq 4 ]
   done
 }
+
+preparar_apply() {
+  export PATH="$BATS_TEST_DIRNAME/stubs:$PATH"
+  export PACMAN_LOG="$BATS_TEST_TMPDIR/pacman.log"
+  : > "$PACMAN_LOG"
+  export XINGUOS_ETC="$BATS_TEST_TMPDIR/etc-xinguos"
+  export XINGUOS_MODPROBE_DIR="$BATS_TEST_TMPDIR/modprobe.d"
+}
+
+@test "--apply instala os pacotes do perfil e grava modprobe e gaming.conf" {
+  preparar_apply
+  XINGUOS_LSPCI_ARQUIVO=tests/fixtures/lspci/gtx1060.txt run "$HW" --apply
+  echo "$output"
+  [ "$status" -eq 0 ]
+  grep -qx -- "-S --needed nvidia-580xx-dkms nvidia-580xx-utils lib32-nvidia-580xx-utils" "$PACMAN_LOG"
+  grep -qx "options nvidia_drm modeset=1" "$XINGUOS_MODPROBE_DIR/xinguos-nvidia.conf"
+  grep -qx "MODO_GAMING=compativel" "$XINGUOS_ETC/gaming.conf"
+}
+
+@test "--apply não sobrescreve gaming.conf existente" {
+  preparar_apply
+  mkdir -p "$XINGUOS_ETC"
+  echo "MODO_GAMING=completo" > "$XINGUOS_ETC/gaming.conf"
+  XINGUOS_LSPCI_ARQUIVO=tests/fixtures/lspci/gtx1060.txt run "$HW" --apply
+  [ "$status" -eq 0 ]
+  grep -qx "MODO_GAMING=completo" "$XINGUOS_ETC/gaming.conf"
+}
+
+@test "pacman falhou → nada é escrito" {
+  preparar_apply
+  PACMAN_STATUS=1 XINGUOS_LSPCI_ARQUIVO=tests/fixtures/lspci/gtx1060.txt run "$HW" --apply
+  [ "$status" -ne 0 ]
+  [ ! -e "$XINGUOS_MODPROBE_DIR/xinguos-nvidia.conf" ]
+  [ ! -e "$XINGUOS_ETC/gaming.conf" ]
+}
+
+@test "--forcar escolhe o perfil mesmo com duas GPUs" {
+  preparar_apply
+  XINGUOS_LSPCI_ARQUIVO=tests/fixtures/lspci/notebook.txt run "$HW" --apply --forcar nvidia-580xx
+  echo "$output"
+  [ "$status" -eq 0 ]
+  grep -qx -- "-S --needed nvidia-580xx-dkms nvidia-580xx-utils lib32-nvidia-580xx-utils" "$PACMAN_LOG"
+}
+
+@test "--forcar com perfil inválido sai 2" {
+  preparar_apply
+  XINGUOS_LSPCI_ARQUIVO=tests/fixtures/lspci/gtx1060.txt run "$HW" --apply --forcar inventado
+  [ "$status" -eq 2 ]
+  run grep -- "-S" "$PACMAN_LOG"
+  [ "$status" -ne 0 ]
+}
+
+@test "--hook avisa quando falta driver e não chama pacman -S" {
+  preparar_apply
+  PACMAN_Q_STATUS=1 XINGUOS_LSPCI_ARQUIVO=tests/fixtures/lspci/gtx1060.txt run "$HW" --hook
+  echo "$output"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"rode: sudo xinguos-hwdetect --apply"* ]]
+  run grep -- "-S" "$PACMAN_LOG"
+  [ "$status" -ne 0 ]
+}
+
+@test "--hook não sobrescreve gaming.conf" {
+  preparar_apply
+  mkdir -p "$XINGUOS_ETC"
+  echo "MODO_GAMING=completo" > "$XINGUOS_ETC/gaming.conf"
+  XINGUOS_LSPCI_ARQUIVO=tests/fixtures/lspci/gtx1060.txt run "$HW" --hook
+  [ "$status" -eq 0 ]
+  grep -qx "MODO_GAMING=completo" "$XINGUOS_ETC/gaming.conf"
+}

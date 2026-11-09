@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# stub do pacman para os testes: registra cada chamada em $PACMAN_LOG
+echo "$*" >> "$PACMAN_LOG"
+case "${1:-}" in
+  -Q*) exit "${PACMAN_Q_STATUS:-0}" ;;
+  *) exit "${PACMAN_STATUS:-0}" ;;
+esac
