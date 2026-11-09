@@ -31,4 +31,13 @@ pacman -Sp --print-format '%n' xinguos-desktop xinguos-apps > /tmp/arvore.txt
 grep -qx plasma-desktop /tmp/arvore.txt
 if grep -qx kdeconnect /tmp/arvore.txt; then echo "smoke-repo: xinguos-desktop/apps puxam kdeconnect" >&2; exit 1; fi
 pacman -Sw --noconfirm xinguos-desktop
+# foco: instala de verdade e o daemon responde no D-Bus (sem KWin, sem swayidle no container)
+pacman -S --noconfirm xinguos-foco
+XINGUOS_FOCO_DB=/tmp/f.db XINGUOS_FOCO_CONFIG=/tmp/foco.toml dbus-run-session -- sh -c '
+  xinguos-foco & d=$!
+  for _ in $(seq 1 50); do busctl --user status org.xinguos.Foco >/dev/null 2>&1 && break; sleep 0.2; done
+  busctl --user call org.xinguos.Foco /org/xinguos/Foco org.xinguos.Foco Foco sss firefox firefox 1
+  busctl --user call org.xinguos.Foco /org/xinguos/Foco org.xinguos.Foco Totais
+  r=$?; kill $d; wait $d; exit $r' | tee /tmp/foco.txt
+grep -q '^s ' /tmp/foco.txt
 echo "smoke-repo: ok"

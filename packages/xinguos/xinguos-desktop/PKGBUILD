@@ -1,6 +1,6 @@
 pkgname=xinguos-desktop
 pkgver=0.1.0
-pkgrel=3
+pkgrel=4
 pkgdesc="Desktop do XInguOS: Plasma mínimo, barra no topo estilo Mac, dock, atalhos do Windows e autotile"
 arch=(any)
 url="https://github.com/Guilherme-XHP/xinguos"
@@ -12,6 +12,7 @@ depends=(
   konsole dolphin kate ark gwenview okular spectacle
   appmenu-gtk-module kwin-scripts-krohnkite
   polkit-kde-agent kde-gtk-config kwallet-pam
+  xinguos-foco
 )
 backup=(etc/xdg/kdeglobals etc/xdg/baloofilerc)
 install=xinguos-desktop.install
