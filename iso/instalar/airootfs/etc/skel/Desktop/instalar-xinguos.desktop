@@ -2,7 +2,7 @@
 Type=Application
 Name=Instalar o XInguOS
 Comment=Instala o XInguOS no computador
-Exec=sudo -E calamares
+Exec=sudo -E /usr/local/bin/xinguos-instalar
 Icon=xinguos
 Terminal=false
 Categories=System;

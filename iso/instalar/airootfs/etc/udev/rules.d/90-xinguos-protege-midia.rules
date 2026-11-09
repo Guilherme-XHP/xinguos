@@ -1,0 +1,3 @@
+# XInguOS ao vivo: o HD/pendrive do Ventoy fica somente leitura também se for plugado ou
+# resetado depois do boot (o instalador nunca pode apagá-lo)
+ACTION=="add|change", SUBSYSTEM=="block", ENV{ID_FS_LABEL}=="Ventoy|VTOYEFI", RUN+="/usr/local/bin/xinguos-protege-midia"

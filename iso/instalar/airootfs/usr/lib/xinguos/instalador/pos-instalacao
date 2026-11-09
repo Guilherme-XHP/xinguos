@@ -36,10 +36,30 @@ for f in \
   /etc/systemd/system/getty@tty1.service.d/autologin.conf \
   /etc/systemd/journald.conf.d/volatile-storage.conf \
   /root/.automated_script.sh \
-  /root/.zlogin; do
+  /root/.zlogin \
+  /usr/local/bin/xinguos-instalar \
+  /etc/udev/rules.d/90-xinguos-protege-midia.rules \
+  /etc/ssh/sshd_config.d/10-archiso.conf \
+  /etc/systemd/network/20-ethernet.network \
+  /etc/systemd/networkd.conf.d/ipv6-privacy-extensions.conf \
+  /etc/systemd/resolved.conf.d/archiso.conf \
+  /etc/systemd/system-generators/systemd-gpt-auto-generator \
+  /etc/systemd/system/multi-user.target.wants/sshd.service \
+  /etc/systemd/system/multi-user.target.wants/systemd-networkd.service \
+  /etc/systemd/system/multi-user.target.wants/hv_fcopy_daemon.service \
+  /etc/systemd/system/multi-user.target.wants/hv_kvp_daemon.service \
+  /etc/systemd/system/multi-user.target.wants/hv_vss_daemon.service \
+  /etc/systemd/system/multi-user.target.wants/vboxservice.service \
+  /etc/systemd/system/multi-user.target.wants/vmtoolsd.service \
+  /etc/systemd/system/multi-user.target.wants/vmware-vmblock-fuse.service \
+  /etc/systemd/system/sockets.target.wants/systemd-networkd.socket \
+  /etc/systemd/system/network-online.target.wants/systemd-networkd-wait-online.service \
+  /etc/systemd/system/systemd-networkd-wait-online.service.d/wait-for-only-one-interface.conf; do
   rm -f "$R$f"
 done
-rm -rf "$R/etc/calamares" "$R/usr/lib/xinguos/instalador"
+rm -rf "$R/etc/calamares" "$R/usr/lib/xinguos/instalador" "$R/etc/systemd/system/cloud-init.target.wants"
+# (o perfil baseline do archiso liga sshd com senha, systemd-networkd brigando com o
+#  NetworkManager, cloud-init e os serviços de convidado de VM; o resolved fica, o NM usa)
 rmdir "$R/etc/systemd/system/getty@tty1.service.d" 2>/dev/null || true
 
 # o usuário do live (o Calamares proíbe criar outro com esse nome)
@@ -49,7 +69,14 @@ fi
 # root do live não tem senha: no sistema instalado ele fica travado (sudo pelo grupo wheel)
 passwd -l root >/dev/null || aviso "não consegui travar a senha do root"
 
-# 2. pacotes que só servem ao live
+# 2. pacotes que só servem ao live: os de VM/nuvem do baseline e os do live em si
+vm=()
+for p in cloud-init hyperv open-vm-tools qemu-guest-agent virtualbox-guest-utils-nox; do
+  instalado "$p" && vm+=("$p")
+done
+if [ ${#vm[@]} -gt 0 ]; then
+  pacman -Rns --noconfirm "${vm[@]}" || aviso "não consegui remover: ${vm[*]}"
+fi
 remover=()
 for p in calamares mkinitcpio-archiso; do instalado "$p" && remover+=("$p"); done
 if instalado linux-zen; then
@@ -57,6 +84,15 @@ if instalado linux-zen; then
 fi
 if [ ${#remover[@]} -gt 0 ]; then
   pacman -Rns --noconfirm "${remover[@]}" || aviso "não consegui remover: ${remover[*]}"
+fi
+
+# 2b. chaveiro do pacman: o mkarchiso não cria /etc/pacman.d/gnupg (pacstrap -G); sem ele
+#     nenhum pacman -S/-Syu funciona com SigLevel Required
+echo "==> pos-instalacao: chaveiro do pacman"
+if pacman-key --init && pacman-key --populate archlinux xinguos; then
+  :
+else
+  aviso "chaveiro do pacman: rode depois sudo pacman-key --init && sudo pacman-key --populate"
 fi
 
 # 3. driver de vídeo (spec 3): o live traz o 580xx; outra GPU troca pelo driver dela
@@ -122,6 +158,9 @@ if [ -f "$tpl" ]; then
 else
   aviso "template do snapper (xinguos-base) não encontrado"
 fi
+
+# o gpg-agent do pacman-key deixaria o alvo ocupado (o umount do Calamares falharia)
+gpgconf --homedir /etc/pacman.d/gnupg --kill all >/dev/null 2>&1 || true
 
 echo "==> pos-instalacao: pronto ($avisos aviso(s))"
 exit 0

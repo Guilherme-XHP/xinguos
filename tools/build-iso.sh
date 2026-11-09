@@ -83,6 +83,13 @@ sed -i -e "s/^iso_name=.*/iso_name=\"$nome\"/" \
        -e "s/^iso_label=.*/iso_label=\"$rotulo\"/" \
        -e 's|^iso_publisher=.*|iso_publisher="XInguOS <https://github.com/Guilherme-XHP/xinguos>"|' \
        "$perfil/profiledef.sh"
+# a ISO de instalação usa squashfs: o unpackfs do Calamares copia o sistema dele
+# (o baseline usa erofs, que fica na ISO de teste)
+if [ "$nome" != xinguos-teste ]; then
+  sed -i -e 's/^airootfs_image_type=.*/airootfs_image_type="squashfs"/' \
+         -e "s/^airootfs_image_tool_options=.*/airootfs_image_tool_options=('-comp' 'zstd' '-Xcompression-level' '15' '-b' '1M')/" \
+         "$perfil/profiledef.sh"
+fi
 # executáveis e sudoers do overlay e do protótipo (o git no Windows não guarda o bit +x)
 while IFS= read -r f; do
   permissoes+=("${f#"$air"}:755")

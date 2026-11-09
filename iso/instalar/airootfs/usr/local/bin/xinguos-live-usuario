@@ -5,6 +5,9 @@ set -euo pipefail
 if ! id live >/dev/null 2>&1; then
   useradd -m -G wheel -s /bin/bash -c "XInguOS ao vivo" live
   passwd -d live
+  # no live, o Bem-vindo não abre sozinho (instalar apps no live só encheria a RAM)
+  install -d -o live -g live /home/live/.local /home/live/.local/state /home/live/.local/state/xinguos
+  install -o live -g live -m 644 /dev/null /home/live/.local/state/xinguos/boasvindas-v1
 fi
 mkdir -p /run/xinguos
 for s in /run/archiso/copytoram/airootfs.sfs /run/archiso/bootmnt/arch/x86_64/airootfs.sfs; do

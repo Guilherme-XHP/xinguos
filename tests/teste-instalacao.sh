@@ -43,6 +43,13 @@ done
 ! arch-chroot "$alvo" pacman -Q linux >/dev/null 2>&1 || falhou "kernel do live (linux) continua instalado"
 arch-chroot "$alvo" passwd -S root | grep -q ' L ' || falhou "root não ficou travado"
 grep -qx 'SNAPPER_CONFIGS="root"' "$alvo/etc/conf.d/snapper" || falhou "snapper não configurado"
+arch-chroot "$alvo" pacman-key --list-keys 2>/dev/null | grep -qi xinguos || falhou "chaveiro do pacman sem a chave do XInguOS"
+for f in /etc/systemd/system/multi-user.target.wants/sshd.service \
+         /etc/systemd/system/multi-user.target.wants/systemd-networkd.service \
+         /etc/ssh/sshd_config.d/10-archiso.conf /usr/local/bin/xinguos-instalar; do
+  [ ! -e "$alvo$f" ] || falhou "sobrou do baseline/live: $f"
+done
+! arch-chroot "$alvo" pacman -Q cloud-init >/dev/null 2>&1 || falhou "cloud-init continua instalado"
 grep -qx 'ID=xinguos' "$alvo/etc/os-release" || falhou "os-release não é do XInguOS"
 arch-chroot "$alvo" pacman -Q xinguos-desktop xinguos-boasvindas xinguos-foco xinguos-branding >/dev/null \
   || falhou "faltam pacotes do XInguOS no sistema instalado"

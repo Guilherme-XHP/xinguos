@@ -47,3 +47,12 @@ setup_file() {
   run env XINGUOS_ISO_NOME='x; rm' tools/build-iso.sh iso/instalar "$BATS_TEST_TMPDIR/o" --so-perfil
   [ "$status" -ne 0 ]
 }
+
+@test "ISO de instalação usa squashfs (o unpackfs do Calamares copia dele); a de teste fica como está" {
+  grep -q 'airootfs_image_type="squashfs"' "$PERFIL/profiledef.sh"
+  grep -q 'source: "/run/xinguos/airootfs.sfs"' iso/instalar/calamares/modules/unpackfs.conf
+}
+
+@test "Bem-vindo não abre sozinho no live (instalar apps no live encheria a RAM)" {
+  grep -q 'boasvindas-v1' "$PERFIL/airootfs/usr/local/bin/xinguos-live-usuario"
+}

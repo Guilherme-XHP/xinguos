@@ -67,3 +67,30 @@ TAB
   grep -qx "ExecStart=/usr/local/bin/xinguos-protege-midia" "$S"
   grep -q "xinguos-protege-midia.service" iso/instalar/airootfs/usr/lib/xinguos/instalador/pos-instalacao
 }
+
+@test "instalador só abre com o disco do Ventoy somente leitura" {
+  I=iso/instalar/airootfs/usr/local/bin/xinguos-instalar
+  printf '#!/usr/bin/env bash\necho "calamares $*" >> "%s"\n' "$LOG" > "$T/calamares"
+  printf '#!/usr/bin/env bash\necho "protege" >> "%s"\n' "$LOG" > "$T/xinguos-protege-midia"
+  printf '#!/usr/bin/env bash\necho "kdialog $*" >> "%s"\n' "$LOG" > "$T/kdialog"
+  chmod +x "$T/calamares" "$T/xinguos-protege-midia" "$T/kdialog"
+  # blockdev --getro: 0 = gravável
+  printf '#!/usr/bin/env bash\necho "blockdev $*" >> "%s"\n[ "$1" = --getro ] && echo "${FAKE_RO:-1}"\nexit 0\n' "$LOG" > "$T/blockdev"
+  FAKE_RO=0 run bash "$I"
+  [ "$status" -ne 0 ]
+  grep -q "^protege" "$LOG"
+  grep -q "^kdialog --error" "$LOG"
+  run grep -q "^calamares" "$LOG"
+  [ "$status" -ne 0 ]
+  : > "$LOG"
+  FAKE_RO=1 run bash "$I"
+  [ "$status" -eq 0 ]
+  grep -q "^calamares" "$LOG"
+}
+
+@test "HD do Ventoy plugado ou resetado depois do boot também fica somente leitura (udev)" {
+  R=iso/instalar/airootfs/etc/udev/rules.d/90-xinguos-protege-midia.rules
+  grep -q 'ENV{ID_FS_LABEL}=="Ventoy|VTOYEFI"' "$R"
+  grep -q 'RUN+="/usr/local/bin/xinguos-protege-midia"' "$R"
+  grep -qx 'Exec=sudo -E /usr/local/bin/xinguos-instalar' iso/instalar/airootfs/usr/share/applications/instalar-xinguos.desktop
+}

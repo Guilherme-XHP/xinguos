@@ -33,3 +33,10 @@ assert p["defaultFileSystemType"] == "btrfs" and p["initialSwapChoice"] == "none
 b = yaml.safe_load(open(cal / "branding/xinguos/branding.desc", encoding="utf-8"))
 assert b["strings"]["bootloaderEntryName"] == "XInguOS"
 print("calamares: ok")
+
+f = yaml.safe_load(open(cal / "modules/fstab.conf", encoding="utf-8"))
+for chave in ("default", "ssd"):
+    assert isinstance(f["tmpOptions"][chave], dict), "tmpOptions precisa ser mapa (Calamares 3.4)"
+    assert "tmpfs" in f["tmpOptions"][chave] and "options" in f["tmpOptions"][chave]
+assert p.get("enableLuksAutomatedPartitioning") is False, "sem initcpiocfg/luks: não oferecer criptografia"
+print("calamares (fstab/luks): ok")
