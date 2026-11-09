@@ -36,3 +36,16 @@ Itens pequenos que as revisões acharam e que ficaram para depois. Quem pegar um
   - a ociosidade vem do swayidle;
   - o nome curto vai junto no `ignoreClass`;
   - o painel não usa Kirigami.
+
+## Plano 6 (branding, boas-vindas, ISO de instalação)
+
+- `grubcfg.conf`: `keepDistributor` → `keep_distributor` (sem efeito hoje); `GRUB_DEFAULT=saved` sem `GRUB_SAVEDEFAULT`.
+- A VTOYEFI pode ser oferecida como ESP nos modos "ao lado" e "substituir". A instalação falha no bootloader, mas o disco fica salvo pelo somente leitura.
+- O os-prober pode criar uma entrada falsa no GRUB para a ISO do Ventoy.
+- O `userdel live` nunca roda numa instalação real, porque o usuário é criado no boot. É inofensivo.
+- `build-repo`: um pacote compilado com o PKGBUILD mudado sem subir o pkgrel é republicado em silêncio. Comparar `pkgver`/`depends` do `.SRCINFO`.
+- Boas-vindas:
+  - o script vai para `/tmp/xinguos-boasvindas.sh` (nome previsível) quando não há `XDG_RUNTIME_DIR`;
+  - o Android SDK depende do JDK do xinguos-apps.
+- Plymouth e tema do GRUB ficam para o branding final.
+- O teste de instalação no CI cobre o pós-instalação no chroot. O Calamares gráfico (particionar, GRUB de verdade, primeiro boot) só foi testado à mão.
