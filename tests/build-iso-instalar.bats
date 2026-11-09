@@ -40,7 +40,7 @@ setup_file() {
   grep -qF '["/etc/sudoers.d/10-xinguos-live"]="0:0:440"' "$PERFIL/profiledef.sh"
   grep -qF '["/etc/skel/Desktop/instalar-xinguos.desktop"]="0:0:755"' "$PERFIL/profiledef.sh"
   grep -qx 'User=live' "$PERFIL/airootfs/etc/sddm.conf.d/10-xinguos-live.conf"
-  grep -qx 'Exec=sudo -E calamares' "$PERFIL/airootfs/usr/share/applications/instalar-xinguos.desktop"
+  grep -qx 'Exec=sudo -E /usr/local/bin/xinguos-instalar' "$PERFIL/airootfs/usr/share/applications/instalar-xinguos.desktop"
 }
 
 @test "nome inválido é recusado" {
