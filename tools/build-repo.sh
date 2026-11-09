@@ -51,6 +51,32 @@ while IFS= read -r linha || [ -n "$linha" ]; do
   dir="$trabalho/$(basename "$linha")"
   cp -r "$raiz/$linha" "$dir"
   chown -R builder: "$dir"
+  # Pacote compilado (arch ≠ any, ex.: Calamares) já publicado: o binário nunca sai igual,
+  # então não recompila — reaproveita os bytes publicados (o nome é imutável; mudar = subir pkgrel)
+  # e instala, para os pacotes seguintes acharem a dependência.
+  if [ -n "$publicados" ]; then
+    mapfile -t lista < <(cd "$dir" && sudo -u builder makepkg --packagelist </dev/null 2>/dev/null)
+    todos=${#lista[@]}
+    for pkg in "${lista[@]}"; do
+      nome=$(basename "$pkg")
+      case "$nome" in *-any.pkg.tar.*) todos=0; break ;; esac
+      [ -f "$publicados/$nome" ] && [ -f "$publicados/$nome.sig" ] || { todos=0; break; }
+    done
+    if [ "$todos" -gt 0 ]; then
+      reusar=()
+      for pkg in "${lista[@]}"; do
+        nome=$(basename "$pkg")
+        cp "$publicados/$nome" "$publicados/$nome.sig" "$out/"
+        # cópia sem o .sig ao lado: instala como o makepkg -si faz (a assinatura vai para o repo)
+        cp "$publicados/$nome" "$trabalho/$nome"
+        reusar+=("$trabalho/$nome")
+        echo "==> $nome já publicado (compilado): reaproveitado sem recompilar"
+      done
+      pacman -U --noconfirm --needed "${reusar[@]}" </dev/null || die "não consegui instalar o publicado de $linha"
+      rm -f "${reusar[@]}"
+      continue
+    fi
+  fi
   echo "==> compilando $linha"
   # -i instala o resultado, para que os pacotes seguintes encontrem as dependências
   # </dev/null: nada dentro do build pode ler (e engolir) as próximas linhas do arquivo de ordem
