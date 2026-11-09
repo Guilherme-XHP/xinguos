@@ -1,0 +1,8 @@
+pkgname=xinguos-kernels
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="Kernels do XInguOS: linux-zen (principal) e linux-lts (reserva), com headers para o DKMS"
+arch=(any)
+url="https://github.com/Guilherme-XHP/xinguos"
+license=(GPL-3.0-or-later)
+depends=(linux-zen linux-zen-headers linux-lts linux-lts-headers)

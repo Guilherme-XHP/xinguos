@@ -39,6 +39,7 @@ B=packages/xinguos/xinguos-base
 }
 
 @test "configs vão para diretórios de fornecedor" {
+  [ -f "$B/PKGBUILD" ]
   run grep -E '"\$pkgdir/etc/' "$B/PKGBUILD"
   [ "$status" -ne 0 ]
 }

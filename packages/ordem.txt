@@ -5,3 +5,5 @@ aur/gamescope-session-git
 aur/gamescope-session-steam-git
 xinguos/xinguos-hwdetect
 aur/paru-bin
+xinguos/xinguos-kernels
+xinguos/xinguos-base
