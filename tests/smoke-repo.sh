@@ -26,4 +26,9 @@ test -f /usr/share/libalpm/hooks/10-xinguos-nvidia-guard.hook
 
 # toda a árvore de dependências da base resolve com repos oficiais + [xinguos], sem AUR
 pacman -Sw --noconfirm xinguos-base xinguos-kernels
+# desktop e apps: a árvore inteira resolve, puxa o Plasma e NUNCA o KDE Connect (spec 2.4)
+pacman -Sp --print-format '%n' xinguos-desktop xinguos-apps > /tmp/arvore.txt
+grep -qx plasma-desktop /tmp/arvore.txt
+if grep -qx kdeconnect /tmp/arvore.txt; then echo "smoke-repo: xinguos-desktop/apps puxam kdeconnect" >&2; exit 1; fi
+pacman -Sw --noconfirm xinguos-desktop
 echo "smoke-repo: ok"
