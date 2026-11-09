@@ -10,6 +10,9 @@ set -euo pipefail
 iso=$1
 trab=$2
 falhou() { echo "teste-instalacao: FALHOU: $*" >&2; exit 1; }
+# os links do systemd são absolutos (/etc/...): fora do chroot, -e/-f seguiriam para o /etc do
+# container. "existe" vale para arquivo, pasta ou link (mesmo quebrado)
+existe() { [ -e "$1" ] || [ -L "$1" ]; }
 
 mkdir -p "$trab/iso" "$trab/alvo"
 mount -o loop,ro "$iso" "$trab/iso"
@@ -21,7 +24,7 @@ alvo=$trab/alvo
 arch-chroot "$alvo" useradd -m -G wheel live
 [ -x "$alvo/usr/lib/xinguos/instalador/pos-instalacao" ] || falhou "pos-instalacao não está na ISO (ou sem +x)"
 [ -f "$alvo/etc/calamares/settings.conf" ] || falhou "configuração do Calamares não está na ISO"
-[ -f "$alvo/etc/systemd/system/multi-user.target.wants/xinguos-protege-midia.service" ] || falhou "proteção do disco não está habilitada no live"
+existe "$alvo/etc/systemd/system/multi-user.target.wants/xinguos-protege-midia.service" || falhou "proteção do disco não está habilitada no live"
 
 echo "==> rodando o pos-instalacao no chroot"
 arch-chroot "$alvo" /usr/lib/xinguos/instalador/pos-instalacao
@@ -36,7 +39,7 @@ done
 for f in /etc/calamares /etc/sddm.conf.d/10-xinguos-live.conf /etc/sudoers.d/10-xinguos-live \
          /etc/systemd/system/multi-user.target.wants/xinguos-protege-midia.service \
          /usr/lib/xinguos/instalador /etc/skel/Desktop/instalar-xinguos.desktop; do
-  [ ! -e "$alvo$f" ] || falhou "sobrou do live: $f"
+  ! existe "$alvo$f" || falhou "sobrou do live: $f"
 done
 ! arch-chroot "$alvo" id live >/dev/null 2>&1 || falhou "usuário live continua no sistema"
 ! arch-chroot "$alvo" pacman -Q calamares >/dev/null 2>&1 || falhou "calamares continua instalado"
@@ -47,7 +50,7 @@ arch-chroot "$alvo" pacman-key --list-keys 2>/dev/null | grep -qi xinguos || fal
 for f in /etc/systemd/system/multi-user.target.wants/sshd.service \
          /etc/systemd/system/multi-user.target.wants/systemd-networkd.service \
          /etc/ssh/sshd_config.d/10-archiso.conf /usr/local/bin/xinguos-instalar; do
-  [ ! -e "$alvo$f" ] || falhou "sobrou do baseline/live: $f"
+  ! existe "$alvo$f" || falhou "sobrou do baseline/live: $f"
 done
 ! arch-chroot "$alvo" pacman -Q cloud-init >/dev/null 2>&1 || falhou "cloud-init continua instalado"
 grep -qx 'ID=xinguos' "$alvo/etc/os-release" || falhou "os-release não é do XInguOS"
