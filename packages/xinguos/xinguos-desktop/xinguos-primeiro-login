@@ -39,7 +39,7 @@ atalho kwin -- "Window Quick Tile Right" "Meta+Right,Meta+Right,Encaixar à dire
 atalho kwin -- "Overview" "Meta+Tab,Meta+W,Visão geral"
 atalho kwin -- "KrohnkiteNextLayout" "Meta+T,none,Krohnkite: alternar flutuante/lado a lado"
 atalho kwin -- "KrohnkiteToggleFloat" "Meta+F,Meta+F,Krohnkite: flutuar janela"
-# (o 2º campo é o "padrão", usado só no "restaurar padrão"; onde o original tem  ou vírgula, que exigem escape no KConfig, fica "none")
+# (o 2º campo é o "padrão", usado só no "restaurar padrão"; onde o original tem barra invertida ou vírgula, que exigem escape no KConfig, fica "none")
 # atalhos do Krohnkite que brigam com os do Windows (Win+L, Win+D, Win+I, Win+R, Win+. ...)
 atalho kwin -- "KrohnkiteTileLayout" "none,Meta+T,Krohnkite: layout lado a lado"
 atalho kwin -- "KrohnkiteMonocleLayout" "none,Meta+M,Krohnkite: layout monocle"
