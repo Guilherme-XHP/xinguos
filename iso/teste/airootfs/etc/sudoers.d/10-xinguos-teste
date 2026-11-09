@@ -1,0 +1,2 @@
+# SÓ NA ISO DE TESTE: o usuário do live usa sudo sem senha.
+%wheel ALL=(ALL:ALL) NOPASSWD: ALL

@@ -1,0 +1,108 @@
+name: repo
+
+on:
+  push:
+  workflow_dispatch:
+    inputs:
+      iso:
+        description: "Gerar também a ISO de teste ao vivo"
+        type: boolean
+        default: false
+
+jobs:
+  testes:
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Preparar ambiente Arch
+        run: bash tools/ci-setup.sh
+      - name: shellcheck
+        run: shellcheck tools/*.sh marco0/criar-persistencia.sh iso/teste/airootfs/usr/local/bin/xinguos-teste-usuario tests/smoke-repo.sh marco0/prototipo/steamos-session-select marco0/prototipo/xinguos-escrever-sessao marco0/prototipo/instalar.sh
+      - name: bats
+        run: bats tests/
+
+  build:
+    concurrency:
+      group: repo-x86_64
+      cancel-in-progress: false
+    needs: testes
+    if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Preparar ambiente Arch
+        run: bash tools/ci-setup.sh
+      - name: Importar chave de assinatura
+        env:
+          XINGUOS_GPG_KEY: ${{ secrets.XINGUOS_GPG_KEY }}
+        run: echo "$XINGUOS_GPG_KEY" | gpg --batch --import
+      - name: Baixar pacotes já publicados (nome é imutável)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          mkdir -p publicados
+          gh release download repo-x86_64 -p '*.pkg.tar.zst' -p '*.pkg.tar.zst.sig' -D publicados || echo "sem release ainda"
+      - name: Compilar e assinar
+        env:
+          XINGUOS_GPG_FPR: ${{ vars.XINGUOS_GPG_FPR }}
+          XINGUOS_PUBLICADOS: publicados
+        run: |
+          tools/build-repo.sh packages/ordem.txt packages out
+          cp packages/xinguos/xinguos-keyring/xinguos.gpg out/
+      - name: Publicar na release repo-x86_64
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: tools/publish-release.sh out repo-x86_64
+
+  smoke:
+    concurrency:
+      group: repo-x86_64
+      cancel-in-progress: false
+    needs: build
+    if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Repositório publicado funciona num Arch limpo
+        run: bash tests/smoke-repo.sh "https://github.com/${{ github.repository }}/releases/download/repo-x86_64" "${{ vars.XINGUOS_GPG_FPR }}"
+
+  iso-teste:
+    concurrency:
+      group: repo-x86_64
+      cancel-in-progress: false
+    needs: smoke
+    if: github.event_name == 'workflow_dispatch' && inputs.iso
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux:latest
+      options: --privileged
+    env:
+      XINGUOS_REPO_URL: https://github.com/${{ github.repository }}/releases/download/repo-x86_64
+    steps:
+      - uses: actions/checkout@v4
+      - name: Preparar ambiente Arch
+        run: bash tools/ci-setup.sh
+      - name: Ferramentas de boot do mkarchiso
+        run: pacman -S --noconfirm --needed grub
+      - name: Confiar no [xinguos]
+        run: bash tools/confiar-xinguos.sh "$XINGUOS_REPO_URL" "${{ vars.XINGUOS_GPG_FPR }}"
+      - name: Montar a ISO
+        run: |
+          tools/build-iso.sh iso/teste out-iso
+          test -s out-iso/xinguos-teste.iso
+          du -h out-iso/xinguos-teste.iso
+          df -h /
+      - name: Publicar como artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: xinguos-teste-iso
+          path: out-iso/
+          retention-days: 30
+          compression-level: 0

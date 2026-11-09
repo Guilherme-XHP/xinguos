@@ -1,0 +1,7 @@
+pkgname=xg-teste-a
+pkgver=1
+pkgrel=1
+pkgdesc="Fixture de teste do build-repo: pacote simples"
+arch=(any)
+license=(MIT)
+package() { install -d "$pkgdir/usr/share/xg-teste-a"; }

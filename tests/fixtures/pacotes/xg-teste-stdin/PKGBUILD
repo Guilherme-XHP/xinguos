@@ -1,0 +1,8 @@
+pkgname=xg-teste-stdin
+pkgver=1
+pkgrel=1
+pkgdesc="Fixture do build-repo: build() lê o stdin (não pode engolir o ordem.txt)"
+arch=(any)
+license=(MIT)
+build() { cat > /dev/null || true; }
+package() { install -d "$pkgdir/usr/share/xg-teste-stdin"; }

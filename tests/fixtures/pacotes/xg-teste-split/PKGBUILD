@@ -1,0 +1,9 @@
+pkgbase=xg-teste-split
+pkgname=(xg-split-um xg-split-dois)
+pkgver=1
+pkgrel=1
+pkgdesc="Fixture de teste do build-repo: pkgbase com dois pacotes"
+arch=(any)
+license=(MIT)
+package_xg-split-um() { install -d "$pkgdir/usr/share/xg-split-um"; }
+package_xg-split-dois() { install -d "$pkgdir/usr/share/xg-split-dois"; }

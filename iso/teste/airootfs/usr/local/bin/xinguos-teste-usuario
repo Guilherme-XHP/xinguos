@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Cria o usuário "xingu" do live, se ainda não existir (com persistência ele já existe).
+set -euo pipefail
+if ! id xingu >/dev/null 2>&1; then
+  useradd -m -G wheel -s /bin/bash xingu
+  passwd -d xingu
+fi

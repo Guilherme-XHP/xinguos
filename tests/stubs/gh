@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# stub do GitHub CLI para os testes: registra cada chamada em $GH_LOG
+echo "$*" >> "$GH_LOG"
+if [ "${1:-} ${2:-}" = "release view" ]; then
+  if [[ " $* " == *" --json "* ]]; then
+    printf '%s\n' "${GH_ASSETS_EXISTENTES:-}"
+    exit 0
+  fi
+  exit "${GH_RELEASE_EXISTE:-0}"
+fi
+exit 0

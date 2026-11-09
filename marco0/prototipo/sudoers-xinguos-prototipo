@@ -1,0 +1,2 @@
+# PROTÓTIPO DESCARTÁVEL do Marco 0: libera só o helper que grava a sessão do SDDM.
+%wheel ALL=(root) NOPASSWD: /usr/local/lib/xinguos/xinguos-escrever-sessao

@@ -1,0 +1,8 @@
+pkgname=xg-teste-epoch
+epoch=1
+pkgver=1
+pkgrel=1
+pkgdesc="Fixture de teste do build-repo: epoch gera ':' no nome do arquivo"
+arch=(any)
+license=(MIT)
+package() { install -d "$pkgdir/usr/share/xg-teste-epoch"; }
