@@ -67,7 +67,8 @@ for l in monocle threeColumn spiral quarter stacked columns spread stair binaryT
   k --file kwinrc --group Script-krohnkite --key "${l}LayoutOrder" 0
 done
 k --file kwinrc --group Script-krohnkite --key enableColumnsLayout false
-k --file kwinrc --group Script-krohnkite --key ignoreClass "krunner,yakuake,spectacle,kded5,xwaylandvideobridge,plasmashell,ksplashqml,org.kde.plasmashell,org.kde.polkit-kde-authentication-agent-1,org.kde.kruler,kruler,kwin_wayland,ksmserver-logout-greeter,kdenlive,org.kde.kdenlive,blender,natron,gimp,obs,com.obsproject.Studio,steam,gamescope"
+# "[steam_app_]": colchetes = "contém" no Krohnkite (pega todo jogo do Steam/Proton)
+k --file kwinrc --group Script-krohnkite --key ignoreClass "krunner,yakuake,spectacle,kded5,xwaylandvideobridge,plasmashell,ksplashqml,org.kde.plasmashell,org.kde.polkit-kde-authentication-agent-1,org.kde.kruler,kruler,kwin_wayland,ksmserver-logout-greeter,kdenlive,org.kde.kdenlive,blender,natron,gimp,obs,com.obsproject.Studio,steam,gamescope,[steam_app_]"
 
 # 5. Dolphin no estilo Explorer: barra de endereço editável e modo detalhes em toda pasta
 k --file dolphinrc --group General --key EditableUrl true

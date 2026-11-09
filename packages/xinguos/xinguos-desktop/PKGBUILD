@@ -1,6 +1,6 @@
 pkgname=xinguos-desktop
 pkgver=0.1.0
-pkgrel=2
+pkgrel=3
 pkgdesc="Desktop do XInguOS: Plasma mínimo, barra no topo estilo Mac, dock, atalhos do Windows e autotile"
 arch=(any)
 url="https://github.com/Guilherme-XHP/xinguos"
