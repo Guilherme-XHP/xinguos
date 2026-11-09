@@ -1,4 +1,4 @@
-// node foco/tests/kwin.test.js — roda o main.js do script do KWin com workspace/callDBus falsos
+// node packages/xinguos/xinguos-foco/tests/kwin.test.js — roda o main.js do script do KWin com workspace/callDBus falsos
 const fs = require("fs");
 const path = require("path");
 const vm = require("vm");

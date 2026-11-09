@@ -61,3 +61,8 @@ B=packages/xinguos/xinguos-base
   [ "$status" -eq 0 ]
   [ ! -s "$SYSTEMCTL_LOG" ]
 }
+
+@test "user@ delega io (e cpuset) para o xinguos-foco ajustar IOWeight" {
+  grep -qx "Delegate=cpu cpuset io memory pids" "$B/90-xinguos-delegate.conf"
+  grep -q 'user@.service.d/90-xinguos-delegate.conf' "$B/PKGBUILD"
+}

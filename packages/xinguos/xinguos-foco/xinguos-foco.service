@@ -1,0 +1,12 @@
+[Unit]
+Description=XInguOS Foco: prioridade do app em foco e tempo de uso
+PartOf=graphical-session.target
+After=graphical-session.target
+
+[Service]
+ExecStart=/usr/bin/xinguos-foco
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=graphical-session.target

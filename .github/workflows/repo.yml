@@ -22,11 +22,11 @@ jobs:
       - name: bats
         run: bats tests/
       - name: script do KWin (foco)
-        run: node foco/tests/kwin.test.js
+        run: node packages/xinguos/xinguos-foco/tests/kwin.test.js
       - name: pytest (foco)
-        run: python -m pytest -q foco/tests -m "not dbus"
+        run: python -m pytest -q packages/xinguos/xinguos-foco/tests -m "not dbus"
       - name: pytest (foco, D-Bus)
-        run: dbus-run-session -- python -m pytest -q foco/tests -m dbus
+        run: dbus-run-session -- python -m pytest -q packages/xinguos/xinguos-foco/tests -m dbus
 
   build:
     concurrency:

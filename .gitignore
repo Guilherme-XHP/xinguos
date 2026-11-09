@@ -3,3 +3,5 @@ out/
 *.asc
 privada*
 .superpowers/
+__pycache__/
+.pytest_cache/

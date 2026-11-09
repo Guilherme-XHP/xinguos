@@ -9,7 +9,7 @@ from xinguos_foco.banco import Banco
 from xinguos_foco.config import Config, carregar
 from xinguos_foco_painel import dados
 
-RAIZ = Path(__file__).resolve().parents[2]
+RAIZ = Path(__file__).resolve().parents[4]
 
 
 def ts(texto):

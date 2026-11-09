@@ -1,0 +1,4 @@
+# XInguOS Foco: liga o script do KWin que avisa o app em foco ao daemon.
+# Padrão do sistema; o kwinrc do usuário só sobrescreve se tiver a mesma chave.
+[Plugins]
+xinguos-focoEnabled=true
