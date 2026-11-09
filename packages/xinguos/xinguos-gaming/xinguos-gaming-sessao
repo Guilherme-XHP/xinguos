@@ -17,7 +17,7 @@ LIMITE_RAPIDA=60
 MAX_FALHAS=2
 LOG_SESSAO="$ESTADO/gaming-sessao.log"
 
-# registro curto de cada sessão (o xinguos-diagnostico junta tudo); também vai para o
+# registro curto de cada sessão (o xinguos-teste junta tudo); também vai para o
 # stderr, que o SDDM guarda em ~/.local/share/sddm/wayland-session.log
 registrar() {
   local linha
@@ -34,10 +34,20 @@ rm -f "$ESTADO/troca-pedida"
 modo=$(sed -n 's/^MODO_GAMING=//p' "$ETC/gaming.conf" 2>/dev/null | tail -1)
 [ "$modo" = completo ] || modo=compativel
 registrar "inicio modo=$modo usuario=$(id -un 2>/dev/null) XDG_CURRENT_DESKTOP=${XDG_CURRENT_DESKTOP:-}"
+# sessão encerrada de fora (logout, SDDM): o bash só roda o trap quando o filho termina,
+# e aí o fim da sessão segue normal (conta queda, grava o log)
+for s in TERM HUP INT; do
+  # shellcheck disable=SC2064
+  trap "registrar 'sinal $s recebido (sessão encerrada de fora)'" "$s"
+done
+# o KWin/gamescope e o Steam escrevem aqui (só a última sessão; antes ia só para o log do SDDM)
+SAIDA="$ESTADO/gaming-ultima-sessao.log"
+printf -v agora '%(%F %T)T' -1
+echo "== sessão Gaming $agora modo=$modo" > "$SAIDA" 2>/dev/null || SAIDA=/dev/null
 inicio=$(date +%s)
 case "$modo" in
-  completo) gamescope-session-plus steam ;;
-  *) kwin_wayland --xwayland --exit-with-session /usr/lib/xinguos/xinguos-steam-compativel ;;
+  completo) gamescope-session-plus steam >> "$SAIDA" 2>&1 ;;
+  *) kwin_wayland --xwayland --exit-with-session /usr/lib/xinguos/xinguos-steam-compativel >> "$SAIDA" 2>&1 ;;
 esac
 rc=$?
 duracao=$(( $(date +%s) - inicio ))

@@ -1,0 +1,40 @@
+# Tema do GRUB do XInguOS: fundo escuro com a logo XH Prod e o menu no vinho #640000.
+# A fonte é a unicode.pf2 que o grub-mkconfig já carrega no gfxterm ("Unifont Regular 16").
+title-text: ""
+desktop-image: "background.png"
+desktop-color: "#140707"
+terminal-font: "Unifont Regular 16"
+terminal-left: "10%"
+terminal-top: "10%"
+terminal-width: "80%"
+terminal-height: "80%"
+
++ boot_menu {
+  left = 30%
+  top = 52%
+  width = 40%
+  height = 32%
+  item_font = "Unifont Regular 16"
+  item_color = "#bfb3b3"
+  selected_item_font = "Unifont Regular 16"
+  selected_item_color = "#ffffff"
+  item_height = 34
+  item_padding = 12
+  item_spacing = 6
+  icon_width = 0
+  icon_height = 0
+  item_icon_space = 0
+  selected_item_pixmap_style = "select_*.png"
+  scrollbar = false
+}
+
++ label {
+  id = "__timeout__"
+  left = 0
+  top = 90%
+  width = 100%
+  align = "center"
+  font = "Unifont Regular 16"
+  color = "#8c7f7f"
+  text = "Iniciando o XInguOS em %d s"
+}

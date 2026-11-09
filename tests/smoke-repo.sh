@@ -59,6 +59,14 @@ pacman -S --noconfirm xinguos-tema
 for f in /usr/share/icons/Tela-XInguOS-dark/index.theme /usr/share/icons/Tela-XInguOS/scalable/places/default-folder.svg          /usr/share/plasma/desktoptheme/Materia-Color/metadata.json /usr/share/aurorae/themes/Materia-Dark/metadata.desktop          /usr/share/color-schemes/XInguOSEscuro.colors; do
   [ -e "$f" ] || { echo "smoke-repo: xinguos-tema sem $f" >&2; exit 1; }
 done
+# boot com a logo: o pacote de branding traz o tema do plymouth (com o spinner) e o do GRUB
+pacman -Sw --noconfirm xinguos-branding
+pacman -Qlp /var/cache/pacman/pkg/xinguos-branding-*.pkg.tar.zst > /tmp/branding.txt
+for f in /usr/share/plymouth/themes/xinguos/xinguos.plymouth /usr/share/plymouth/themes/xinguos/watermark.png \
+         /usr/share/plymouth/themes/xinguos/throbber-0001.png /usr/share/grub/themes/xinguos/theme.txt \
+         /usr/share/grub/themes/xinguos/background.png /usr/share/grub/themes/xinguos/select_c.png; do
+  grep -q " $f\$" /tmp/branding.txt || { echo "smoke-repo: xinguos-branding sem $f" >&2; exit 1; }
+done
 # xinguos-teste: roda num sistema que não é o XInguOS sem quebrar, aponta falhas e grava o log
 pacman -Sw --noconfirm xinguos-base
 bsdtar -xOf /var/cache/pacman/pkg/xinguos-base-*.pkg.tar.zst usr/bin/xinguos-teste > /tmp/xinguos-teste

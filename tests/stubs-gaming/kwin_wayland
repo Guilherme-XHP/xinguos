@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
 echo "kwin_wayland $*" >> "$LOG"
 [ -n "${FAKE_TROCA:-}" ] && touch "$FAKE_TROCA"
+[ -z "${FAKE_SAIDA:-}" ] || echo "$FAKE_SAIDA" >&2
+# sessão encerrada de fora: o SDDM manda o sinal para o grupo inteiro
+[ -z "${FAKE_SINAL:-}" ] || kill -s "$FAKE_SINAL" "$PPID"
 exit "${FAKE_RC:-0}"

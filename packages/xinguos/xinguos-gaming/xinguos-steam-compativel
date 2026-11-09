@@ -18,8 +18,11 @@ else
   export MANGOHUD_CONFIGFILE=/usr/share/xinguos/MangoHud.conf
 fi
 
-# portais (diálogo de arquivo etc.) precisam do ambiente desta sessão
-dbus-update-activation-environment --systemd WAYLAND_DISPLAY DISPLAY XDG_CURRENT_DESKTOP >/dev/null 2>&1 || true
+# portais (diálogo de arquivo etc.) precisam do ambiente desta sessão; na janela de teste
+# (xinguos-teste --gaming) não: os apps do Plasma passariam a abrir no KWin da janela
+if [ -z "${XINGUOS_JANELA_TESTE:-}" ]; then
+  dbus-update-activation-environment --systemd WAYLAND_DISPLAY DISPLAY XDG_CURRENT_DESKTOP >/dev/null 2>&1 || true
+fi
 
 steam -gamepadui -steamos3
 rc=$?

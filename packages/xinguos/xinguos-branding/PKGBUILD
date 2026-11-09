@@ -1,11 +1,13 @@
 pkgname=xinguos-branding
 pkgver=0.1.0
-pkgrel=2
-pkgdesc="Identidade visual do XInguOS (logo XH Prod do Xingu, vinho #640000): os-release, wallpaper, SDDM e o easter egg"
+pkgrel=3
+pkgdesc="Identidade visual do XInguOS (logo XH Prod do Xingu, vinho #640000): os-release, wallpaper, SDDM, boot (plymouth e GRUB) e o easter egg"
 arch=(any)
 url="https://github.com/Guilherme-XHP/xinguos"
 license=(GPL-3.0-or-later)
-depends=(filesystem)
+depends=(filesystem plymouth)
+# o spinner e as imagens do plymouth vêm do próprio pacote dele; os PNG saem dos SVG daqui
+makedepends=(plymouth librsvg)
 backup=(etc/xdg/kcm-about-distrorc etc/sddm.conf.d/10-xinguos-tema.conf)
 install=xinguos-branding.install
 
@@ -22,6 +24,23 @@ package() {
   install -Dm644 kcm-about-distrorc "$pkgdir/etc/xdg/kcm-about-distrorc"
   install -Dm644 sddm/theme.conf.user "$pkgdir/usr/share/sddm/themes/breeze/theme.conf.user"
   install -Dm644 sddm/10-xinguos-tema.conf "$pkgdir/etc/sddm.conf.d/10-xinguos-tema.conf"
+  # boot com a logo: plymouth (tema two-step com o spinner do plymouth e a nossa logo)
+  local ply="$pkgdir/usr/share/plymouth/themes/xinguos"
+  install -Dm644 plymouth/xinguos.plymouth "$ply/xinguos.plymouth"
+  cp /usr/share/plymouth/themes/spinner/*.png "$ply/"
+  rm -f "$ply/watermark.png"
+  rsvg-convert -w 160 -h 160 logo/xinguos.svg -o "$ply/watermark.png"
+  [ -s "$ply/watermark.png" ] && [ -s "$ply/throbber-0001.png" ]
+  chmod 644 "$ply"/*.png
+  # GRUB: fundo com a logo e o item selecionado no vinho
+  local grub="$pkgdir/usr/share/grub/themes/xinguos"
+  install -Dm644 grub/theme.txt "$grub/theme.txt"
+  rsvg-convert -w 1920 -h 1080 grub/fundo.svg -o "$grub/background.png"
+  local p
+  for p in c n s e w ne nw se sw; do
+    printf '<svg xmlns="http://www.w3.org/2000/svg" width="4" height="4"><rect width="4" height="4" fill="#640000"/></svg>'       | rsvg-convert -o "$grub/select_$p.png"
+  done
+  chmod 644 "$grub"/*.png
   # easter egg: a foto do cachorro do Xingu (o verdadeiro dono do XInguOS)
   install -Dm644 easter-egg/cachorro.jpg "$pkgdir/usr/share/xinguos/easter-egg/cachorro.jpg"
 }

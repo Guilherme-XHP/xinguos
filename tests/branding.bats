@@ -52,3 +52,24 @@ R=packages/xinguos/xinguos-branding
 @test "easter egg: a foto do cachorro é a mesma de branding/" {
   [ "$(sha256sum < "$R/easter-egg/cachorro.jpg")" = "$(sha256sum < branding/easter-egg/cachorro.jpg)" ]
 }
+
+@test "boot com a logo XHP: tema do plymouth e do GRUB no vinho" {
+  local B=packages/xinguos/xinguos-branding
+  grep -qx 'ModuleName=two-step' "$B/plymouth/xinguos.plymouth"
+  grep -qx 'ImageDir=/usr/share/plymouth/themes/xinguos' "$B/plymouth/xinguos.plymouth"
+  grep -qx 'BackgroundStartColor=0x140707' "$B/plymouth/xinguos.plymouth"
+  grep -q 'desktop-image: "background.png"' "$B/grub/theme.txt"
+  grep -q 'selected_item_pixmap_style = "select_\*.png"' "$B/grub/theme.txt"
+  grep -q 'Unifont Regular 16' "$B/grub/theme.txt"
+  run bash -c "source $B/PKGBUILD; printf '%s\n' \"\${depends[@]}\" \"\${makedepends[@]}\""
+  grep -qx plymouth <<<"$output"
+  grep -qx librsvg <<<"$output"
+  grep -q 'ply="$pkgdir/usr/share/plymouth/themes/xinguos"' "$B/PKGBUILD"
+  grep -q 'logo/xinguos.svg -o "$ply/watermark.png"' "$B/PKGBUILD"
+  grep -q 'grub="$pkgdir/usr/share/grub/themes/xinguos"' "$B/PKGBUILD"
+  grep -q 'grub/fundo.svg -o "$grub/background.png"' "$B/PKGBUILD"
+  grep -q 'install -Dm644 grub/theme.txt "$grub/theme.txt"' "$B/PKGBUILD"
+  # o fundo do GRUB é SVG válido com a logo
+  python3 -c 'import sys, xml.dom.minidom as m; m.parse(sys.argv[1])' "$B/grub/fundo.svg"
+  grep -q '#640000' "$B/grub/fundo.svg"
+}

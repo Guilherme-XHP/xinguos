@@ -12,6 +12,13 @@ fi
 # o pacman espera em vez de derrubar o job
 grep -q '^DisableDownloadTimeout' /etc/pacman.conf || sed -i '/^\[options\]/a DisableDownloadTimeout' /etc/pacman.conf
 
+# imagens novas do archlinux:latest vêm sem a chave mestra do pacman (só as chaves públicas
+# já confiadas): sem ela, o pacman-key --populate do xinguos-keyring falha no makepkg -si
+if ! gpg --homedir /etc/pacman.d/gnupg --batch --list-secret-keys 2>/dev/null | grep -q '^sec'; then
+  pacman-key --init
+  pacman-key --populate archlinux
+fi
+
 pacman -Syu --noconfirm --needed base-devel git namcap bats shellcheck github-cli archiso nodejs python-pytest python-dbus-fast pyside6 desktop-file-utils qt6-svg python-yaml
 
 # usuário sem privilégios para o makepkg (que se recusa a rodar como root)

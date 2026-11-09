@@ -305,3 +305,54 @@ sessao() {  # sessao <rc> <duração>
   sessao 0 300
   [ "$(wc -l < "$XINGUOS_ESTADO/gaming-sessao.log")" -le 500 ]
 }
+
+@test "saída do KWin e do Steam fica em gaming-ultima-sessao.log (só a última sessão)" {
+  mkdir -p "$T/bin"; printf '#!/usr/bin/env bash\nexit 0\n' > "$T/bin/xinguos-session-select"; chmod +x "$T/bin/xinguos-session-select"
+  mkdir -p "$XINGUOS_ESTADO"; echo "sessao velha" > "$XINGUOS_ESTADO/gaming-ultima-sessao.log"
+  FAKE_SAIDA="kwin: falhou ao abrir a GPU" sessao 1 5
+  cat "$XINGUOS_ESTADO/gaming-ultima-sessao.log"
+  grep -q 'kwin: falhou ao abrir a GPU' "$XINGUOS_ESTADO/gaming-ultima-sessao.log"
+  run grep -q 'sessao velha' "$XINGUOS_ESTADO/gaming-ultima-sessao.log"
+  [ "$status" -ne 0 ]
+}
+
+@test "sessão Gaming morta por sinal (SDDM/logout) fica registrada" {
+  mkdir -p "$T/bin"; printf '#!/usr/bin/env bash\nexit 0\n' > "$T/bin/xinguos-session-select"; chmod +x "$T/bin/xinguos-session-select"
+  FAKE_SINAL=TERM sessao 0 5
+  cat "$XINGUOS_ESTADO/gaming-sessao.log"
+  grep -q 'sinal TERM' "$XINGUOS_ESTADO/gaming-sessao.log"
+  grep -q 'resultado=queda' "$XINGUOS_ESTADO/gaming-sessao.log"
+}
+
+@test "troca registra o que o SDDM vai usar (Session= de cada arquivo)" {
+  run bash "$G/xinguos-session-select" gaming
+  [ "$status" -eq 0 ]
+  cat "$XINGUOS_ESTADO/gaming-sessao.log"
+  grep -q 'sddm: zz-xinguos-session.conf:Session=xinguos-gaming.desktop' "$XINGUOS_ESTADO/gaming-sessao.log"
+}
+
+@test "atalho Voltar ao Gaming Mode também na área de trabalho de usuário novo (spec 4.2)" {
+  grep -q 'install -Dm755 org.xinguos.gaming.desktop "$pkgdir/etc/skel/Desktop/org.xinguos.gaming.desktop"' "$G/PKGBUILD"
+}
+
+@test "janela de teste (xinguos-teste --gaming) não mexe no ambiente do Plasma" {
+  mkdir -p "$T/bin"
+  printf '#!/usr/bin/env bash\nexit 0\n' > "$T/bin/steam"
+  printf '#!/usr/bin/env bash\necho "dbus-update $*" >> "%s"\n' "$LOG" > "$T/bin/dbus-update-activation-environment"
+  chmod +x "$T/bin/"*
+  HOME="$T/home" XINGUOS_SENTINELAS="$T" XINGUOS_JANELA_TESTE=1 PATH="$T/bin:$PATH" run bash "$G/xinguos-steam-compativel"
+  [ "$status" -eq 0 ]
+  run grep -q dbus-update "$LOG"
+  [ "$status" -ne 0 ]
+  HOME="$T/home" XINGUOS_SENTINELAS="$T" PATH="$T/bin:$PATH" run bash "$G/xinguos-steam-compativel"
+  grep -q 'dbus-update --systemd WAYLAND_DISPLAY' "$LOG"
+}
+
+@test "helper que falha no meio não deixa zz-xinguos-session.conf.XXXXXX no SDDM" {
+  mkdir -p "$T/bin" "$XINGUOS_SDDM_DIR"
+  # o chmod falha: o arquivo final não é gravado e o temporário é apagado
+  printf '#!/usr/bin/env bash\nexit 1\n' > "$T/bin/chmod"; chmod +x "$T/bin/chmod"
+  PKEXEC_UID= PATH="$T/bin:$PATH" run bash "$G/xinguos-sessao-root" sessao "$(id -un)" xinguos-gaming.desktop
+  [ "$status" -ne 0 ]
+  [ -z "$(ls -A "$XINGUOS_SDDM_DIR")" ]
+}

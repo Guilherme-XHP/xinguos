@@ -1,6 +1,6 @@
 pkgname=xinguos-gaming
 pkgver=0.1.0
-pkgrel=2
+pkgrel=3
 pkgdesc="Gaming Mode do XInguOS: sessão Steam estilo Steam Deck, troca Gaming ↔ Desktop sem senha, MangoHud e GameMode"
 arch=(any)
 url="https://github.com/Guilherme-XHP/xinguos"
@@ -25,6 +25,8 @@ package() {
   install -Dm644 xinguos-gaming.desktop "$pkgdir/usr/share/wayland-sessions/xinguos-gaming.desktop"
   install -Dm644 xinguos-sessao-boot.service "$pkgdir/usr/lib/systemd/system/xinguos-sessao-boot.service"
   install -Dm644 org.xinguos.gaming.desktop "$pkgdir/usr/share/applications/org.xinguos.gaming.desktop"
+  # atalho também na área de trabalho de todo usuário novo (spec 4.2); +x = confiável no Plasma
+  install -Dm755 org.xinguos.gaming.desktop "$pkgdir/etc/skel/Desktop/org.xinguos.gaming.desktop"
   install -Dm644 xinguos-gaming-aviso.desktop "$pkgdir/etc/xdg/autostart/xinguos-gaming-aviso.desktop"
   install -Dm644 MangoHud.conf "$pkgdir/etc/skel/.config/MangoHud/MangoHud.conf"
   install -Dm644 MangoHud.conf "$pkgdir/usr/share/xinguos/MangoHud.conf"

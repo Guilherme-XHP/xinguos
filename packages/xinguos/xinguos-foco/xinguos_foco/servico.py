@@ -138,6 +138,10 @@ async def notificar(bus: MessageBus, nome: str, usado: int, limite: int) -> None
         log.warning("notificação do limite de %s falhou: %s", nome, r.body)
 
 
+# outra instância já tem o nome no D-Bus: o serviço não reinicia (RestartPreventExitStatus)
+JA_RODANDO = 3
+
+
 async def rodar(db=None, sistema=None, usuario=None, parar=None, intervalo: float = INTERVALO) -> int:
     sis_padrao, usu_padrao = caminhos_padrao()
     banco = Banco(db or caminho_padrao())
@@ -148,7 +152,7 @@ async def rodar(db=None, sistema=None, usuario=None, parar=None, intervalo: floa
         log.error("%s já está rodando nesta sessão", NOME)
         bus.disconnect()
         banco.fechar()
-        return 1
+        return JA_RODANDO
     log.info("xinguos-foco no ar (banco %s)", banco.caminho)
 
     parar = parar or asyncio.Event()

@@ -7,6 +7,8 @@ After=graphical-session.target
 ExecStart=/usr/bin/xinguos-foco
 Restart=on-failure
 RestartSec=5
+# 3 = já tem outro xinguos-foco nesta sessão: reiniciar não adianta
+RestartPreventExitStatus=3
 
 [Install]
 WantedBy=graphical-session.target

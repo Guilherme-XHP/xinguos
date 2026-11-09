@@ -21,6 +21,7 @@ HELPER=${XINGUOS_HELPER:-/usr/lib/xinguos/xinguos-sessao-root}
 ETC=${XINGUOS_ETC:-/etc/xinguos}
 ESTADO=${XINGUOS_ESTADO:-${XDG_STATE_HOME:-$HOME/.local/state}/xinguos}
 ESPERA=${XINGUOS_ESPERA_TROCA:-20}
+SDDM_DIR=${XINGUOS_SDDM_DIR:-/etc/sddm.conf.d}
 
 uso() {
   echo "uso: xinguos-session-select gaming|desktop | --proxima gaming|desktop | --default gaming|desktop|ultima | --modo completo|compativel | --status" >&2
@@ -52,7 +53,9 @@ trocar() {
   gravar_proxima "$1"
   mkdir -p "$ESTADO"
   : > "$ESTADO/troca-pedida"
-  printf '%(%F %T)T troca para %s (sessão atual: %s)\n' -1 "$1" "${XDG_CURRENT_DESKTOP:-?}" >> "$ESTADO/gaming-sessao.log" || true
+  # o que o SDDM vai ler no próximo login (o último arquivo com Session= é o que vale)
+  sddm=$(grep -H '^Session=' "$SDDM_DIR"/*.conf 2>/dev/null | sed 's|^.*/||' | tr '\n' ' ' || true)
+  printf '%(%F %T)T troca para %s (sessão atual: %s) sddm: %s\n' -1 "$1" "${XDG_CURRENT_DESKTOP:-?}" "$sddm" >> "$ESTADO/gaming-sessao.log" || true
   case "${XDG_CURRENT_DESKTOP:-}" in
     *gamescope*)
       # Gaming: o Steam fecha direito (nuvem, configurações) e a sessão termina com ele;
