@@ -16,6 +16,9 @@ ApplicationWindow {
     property var marcados: ({})
     property int cliques: 0
     property string avisoHw: ""
+    property var sessao: ({ disponivel: false, padrao: "ultima", modo: "compativel" })
+    readonly property var padroes: ["ultima", "desktop", "gaming"]
+    readonly property var modos: ["compativel", "completo"]
 
     Component.onCompleted: {
         itens = boasvindas.itens()
@@ -23,6 +26,7 @@ ApplicationWindow {
         for (var i = 0; i < itens.length; i++) m[itens[i].id] = itens[i].marcado
         marcados = m
         avisoHw = boasvindas.avisoHw()
+        sessao = boasvindas.sessao()
     }
 
     function instalar() {
@@ -82,6 +86,26 @@ ApplicationWindow {
             wrapMode: Text.WordWrap
             color: "#d97706"
             text: "Placa de vídeo: " + janela.avisoHw
+        }
+
+        GridLayout {
+            visible: janela.sessao.disponivel
+            Layout.fillWidth: true
+            columns: 2
+            Label { text: "Ao ligar o PC, abrir:" }
+            ComboBox {
+                Layout.fillWidth: true
+                model: ["A última sessão usada", "A Área de Trabalho", "O Gaming Mode"]
+                currentIndex: Math.max(0, janela.padroes.indexOf(janela.sessao.padrao))
+                onActivated: status.text = boasvindas.definirPadrao(janela.padroes[currentIndex])
+            }
+            Label { text: "Gaming Mode:" }
+            ComboBox {
+                Layout.fillWidth: true
+                model: ["Compatível (KWin + Steam; seguro para GTX 10xx)", "Completo (gamescope, como no Steam Deck)"]
+                currentIndex: Math.max(0, janela.modos.indexOf(janela.sessao.modo))
+                onActivated: status.text = boasvindas.definirModo(janela.modos[currentIndex])
+            }
         }
 
         ListView {

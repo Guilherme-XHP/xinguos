@@ -25,6 +25,7 @@ ITENS: list[Item] = [
     Item("android-sdk", "Android SDK para o Godot", "cmdline-tools, platform-tools, build-tools, plataforma e NDK "
          "em ~/Android/Sdk (exportar pro Quest)", True),
     Item("proton-ge", "Proton-GE", "Versão mais nova do GE-Proton para o Steam", True),
+    Item("protonup-qt", "ProtonUp-Qt", "Gerencia versões do Proton-GE e do Wine-GE (Flathub)", True),
     Item("impressao", "Impressão", "Instala e liga o CUPS", False),
 ]
 
