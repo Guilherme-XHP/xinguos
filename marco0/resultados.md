@@ -15,4 +15,6 @@
 | 5 | Menu global (Kdenlive / Dolphin / GIMP) | | | |
 | 6 | Desktop parado: picos de CPU | | | |
 
+**Persistência (Task 14): ADIADA (decisão do Xingu, 2026-11-08).** O `criar-persistencia` falhou antes de criar qualquer coisa: o `D:` ficou intacto. Provável causa: a partição do Ventoy não monta no live, e/ou o modo alternativo de boot. Além disso, o modo normal do Ventoy dá erro no GRUB com a ISO. O live serve só para testes rápidos (o cow tem 8 GB em RAM); o teste 4 (Alyx, 67 GB) fica para quando houver persistência ou o sistema estiver instalado.
+
 **Modo padrão da GTX 1060:** completo | compatível
