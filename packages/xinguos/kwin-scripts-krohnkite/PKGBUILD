@@ -1,0 +1,24 @@
+# XInguOS: derivado do PKGBUILD do AUR (kwin-scripts-krohnkite, Matt Quintanilla).
+# Diferença: usa só o .kwinscript da release (checksum estável). O AUR também baixava o
+# archive .tar.gz gerado na hora pelo Codeberg, cujo checksum muda — só servia para o LICENSE,
+# que agora vem junto aqui (MIT, copiado do upstream).
+_pkgname=krohnkite
+pkgname=kwin-scripts-krohnkite
+pkgver=0.9.9.2
+pkgrel=1
+pkgdesc="A dynamic tiling extension for KWin"
+url="https://codeberg.org/anametologin/krohnkite"
+license=('MIT')
+arch=('any')
+depends=('kwin')
+source=("$_pkgname-$pkgver.kwinscript::https://codeberg.org/anametologin/Krohnkite/releases/download/$pkgver/$_pkgname.kwinscript"
+        LICENSE)
+sha256sums=('42f7f66531d366c74b5fc860381da3517ccb4cdccd1f80c122fcab6e9a8fcf7e'
+            SKIP)
+noextract=("$_pkgname-$pkgver.kwinscript")
+
+package() {
+  install -dm755 "$pkgdir/usr/share/kwin/scripts/$_pkgname"
+  bsdtar --no-same-owner -xf "$srcdir/$_pkgname-$pkgver.kwinscript" -C "$pkgdir/usr/share/kwin/scripts/$_pkgname"
+  install -Dm644 LICENSE -t "$pkgdir/usr/share/licenses/$pkgname/"
+}
