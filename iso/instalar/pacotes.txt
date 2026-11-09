@@ -20,12 +20,6 @@ xinguos-keyring
 nvidia-580xx-dkms
 nvidia-580xx-utils
 lib32-nvidia-580xx-utils
-steam
-gamescope
-mangohud
-lib32-mangohud
-gamescope-session-git
-gamescope-session-steam-git
 git
 github-cli
 sudo
@@ -34,6 +28,7 @@ e2fsprogs
 xinguos-base
 xinguos-hwdetect
 xinguos-desktop
+xinguos-gaming
 # instalador e o que o sistema instalado precisa ter
 calamares
 xinguos-kernels
