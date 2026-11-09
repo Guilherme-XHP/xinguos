@@ -49,13 +49,26 @@ encerrar_sessao() {
   fi
 }
 
-trocar() {
-  gravar_proxima "$1"
+trocar() {  # trocar <sessão> <o que foi pedido>
+  local alvo=$1 nota=""
+  case "${XDG_CURRENT_DESKTOP:-}" in
+    *gamescope*)
+      # já no Gaming, pedir o Gaming (Win+Shift+G de novo) só faz sentido como "sair dele"
+      if [ "$alvo" = xinguos-gaming.desktop ]; then
+        alvo=plasma.desktop
+        nota=" (já no Gaming: indo para a Área de Trabalho)"
+      fi
+      ;;
+  esac
+  gravar_proxima "$alvo"
   mkdir -p "$ESTADO"
   : > "$ESTADO/troca-pedida"
   # o que o SDDM vai ler no próximo login (o último arquivo com Session= é o que vale)
   sddm=$(grep -H '^Session=' "$SDDM_DIR"/*.conf 2>/dev/null | sed 's|^.*/||' | tr '\n' ' ' || true)
-  printf '%(%F %T)T troca para %s (sessão atual: %s) sddm: %s\n' -1 "$1" "${XDG_CURRENT_DESKTOP:-?}" "$sddm" >> "$ESTADO/gaming-sessao.log" || true
+  # quem pediu: o steamos-session-select (botão do Steam), o atalho, o terminal...
+  por=$(tr -d '\n' < "/proc/$PPID/comm" 2>/dev/null || echo "?")
+  printf '%(%F %T)T troca para %s%s pedido=%s por=%s (sessão atual: %s) sddm: %s\n' -1 "$alvo" "$nota" "$2" "$por" \
+    "${XDG_CURRENT_DESKTOP:-?}" "$sddm" >> "$ESTADO/gaming-sessao.log" || true
   case "${XDG_CURRENT_DESKTOP:-}" in
     *gamescope*)
       # Gaming: o Steam fecha direito (nuvem, configurações) e a sessão termina com ele;
@@ -85,6 +98,6 @@ case "${1:-}" in
     echo "padrao=$(valor "$ETC/sessao.conf" PADRAO ultima)"
     echo "modo=$(valor "$ETC/gaming.conf" MODO_GAMING compativel)"
     ;;
-  gaming | gamescope | desktop | plasma | plasma-*) [ $# -eq 1 ] || uso; trocar "$(sessao_de "$1")" ;;
+  gaming | gamescope | desktop | plasma | plasma-*) [ $# -eq 1 ] || uso; trocar "$(sessao_de "$1")" "$1" ;;
   *) uso ;;
 esac

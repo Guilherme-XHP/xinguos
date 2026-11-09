@@ -6,15 +6,16 @@
 # Como a sessão termina:
 #   - troca pedida (marca troca-pedida do xinguos-session-select): segue para onde foi pedido;
 #   - durou menos de 60 s sem troca pedida: QUEDA (o código de saída não serve: o
-#     gamescope-session-plus sempre sai 0). Com 2 quedas seguidas, o próximo login vai para
-#     a Área de Trabalho e fica um aviso. Nunca existe loop (spec 4.4);
+#     gamescope-session-plus sempre sai 0). O próximo login vai para a Área de Trabalho e
+#     fica um aviso. Antes eram 2 quedas seguidas, mas no PC real "Sair do Steam" logo no
+#     começo contava como queda e reabria o Gaming: tinha que fechar o Steam 3 vezes.
+#     Nunca existe loop (spec 4.4);
 #   - sessão longa sem troca pedida (o usuário saiu do Steam): vai para a Área de Trabalho.
 set -uo pipefail
 
 ETC=${XINGUOS_ETC:-/etc/xinguos}
 ESTADO=${XINGUOS_ESTADO:-${XDG_STATE_HOME:-$HOME/.local/state}/xinguos}
 LIMITE_RAPIDA=60
-MAX_FALHAS=2
 LOG_SESSAO="$ESTADO/gaming-sessao.log"
 
 # registro curto de cada sessão (o xinguos-teste junta tudo); também vai para o
@@ -62,14 +63,11 @@ elif [ "$duracao" -lt "$LIMITE_RAPIDA" ]; then
   [[ "$anterior" =~ ^[0-9]+$ ]] || anterior=0
   falhas=$((anterior + 1))
   registrar "fim rc=$rc duracao=${duracao}s resultado=queda falhas=$falhas"
-  if [ "$falhas" -ge "$MAX_FALHAS" ]; then
-    echo 0 > "$contador"
-    : > "$ESTADO/gaming-aviso"
-    echo "xinguos-gaming-sessao: o Gaming Mode caiu $falhas vezes seguidas; indo para a Área de Trabalho" >&2
-    xinguos-session-select --proxima desktop || true
-  else
-    echo "$falhas" > "$contador"
-  fi
+  # o contador só informa (o xinguos-teste mostra quantas quedas seguidas houve)
+  echo "$falhas" > "$contador"
+  : > "$ESTADO/gaming-aviso"
+  echo "xinguos-gaming-sessao: o Gaming Mode terminou rápido ($falhas seguida(s)); indo para a Área de Trabalho" >&2
+  xinguos-session-select --proxima desktop || true
 else
   echo 0 > "$contador"
   registrar "fim rc=$rc duracao=${duracao}s resultado=saiu-do-steam"

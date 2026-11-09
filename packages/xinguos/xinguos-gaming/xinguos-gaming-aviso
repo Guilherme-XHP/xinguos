@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# xinguos-gaming-aviso — autostart do Plasma: se o Gaming Mode caiu 2 vezes seguidas e o
-# sistema voltou sozinho para a Área de Trabalho, explica e sugere o modo compatível.
+# xinguos-gaming-aviso — autostart do Plasma: se o Gaming Mode terminou logo depois de abrir
+# (caiu, ou o usuário saiu do Steam) e o sistema voltou para a Área de Trabalho, explica.
 set -uo pipefail
 ESTADO=${XINGUOS_ESTADO:-${XDG_STATE_HOME:-$HOME/.local/state}/xinguos}
 marca="$ESTADO/gaming-aviso"
 [ -e "$marca" ] || exit 0
 rm -f "$marca"
-notify-send -a "XInguOS" -i steam -u critical "O Gaming Mode não abriu" \
-  "Ele caiu duas vezes seguidas, então o XInguOS voltou para a Área de Trabalho. Se a tela ficou preta, use o modo compatível: abra o Bem-vindo ao XInguOS → Gaming Mode → Compatível (ou rode: xinguos-session-select --modo compativel)." || true
+notify-send -a "XInguOS" -i steam "O Gaming Mode fechou logo depois de abrir" \
+  "Se foi você que saiu do Steam, pode ignorar. Se ele caiu sozinho ou a tela ficou preta, troque o modo em Bem-vindo ao XInguOS → Gaming Mode (ou xinguos-session-select --modo compativel) e rode sudo xinguos-teste para ver o porquê." || true
 exit 0

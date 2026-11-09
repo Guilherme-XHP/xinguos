@@ -122,6 +122,21 @@ TESTE=packages/xinguos/xinguos-base/xinguos-teste
   rm -rf "$T"
 }
 
+@test "xinguos-teste: NVIDIA sem sudo vira aviso (o modeset só o root lê); com Y dá OK" {
+  T=$(mktemp -d); mkdir -p "$T/raiz" "$T/home" "$T/bin"
+  printf '#!/bin/sh\necho "01:00.0 VGA compatible controller: NVIDIA Corporation GP106 [GeForce GTX 1060 6GB]"\n' > "$T/bin/lspci"
+  chmod +x "$T/bin/lspci"
+  HOME="$T/home" XINGUOS_RAIZ="$T/raiz" PATH="$T/bin:$PATH" run bash "$TESTE"
+  echo "$output"
+  grep -q 'AVISO.*NVIDIA: modeset não conferido' <<<"$output"
+  run grep -q 'FALHA.*NVIDIA' <<<"$output"
+  [ "$status" -ne 0 ]
+  mkdir -p "$T/raiz/sys/module/nvidia_drm/parameters"; echo Y > "$T/raiz/sys/module/nvidia_drm/parameters/modeset"
+  HOME="$T/home" XINGUOS_RAIZ="$T/raiz" PATH="$T/bin:$PATH" run bash "$TESTE"
+  grep -q 'OK.*NVIDIA: driver carregado com modeset' <<<"$output"
+  rm -rf "$T"
+}
+
 @test "xinguos-teste --gaming recusa rodar como root (o Steam é do usuário)" {
   grep -q 'rode sem sudo' "$TESTE"
 }

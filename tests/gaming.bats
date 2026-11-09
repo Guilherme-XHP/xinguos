@@ -121,22 +121,23 @@ sessao() {  # sessao <rc> <duração>
   grep -qx 'gamescope-session-plus steam' "$LOG"
 }
 
-@test "2 falhas rápidas seguidas: volta para o Desktop e deixa o aviso" {
-  mkdir -p "$T/bin"; printf '#!/usr/bin/env bash\necho "xinguos-session-select $*" >> "%s"\n' "$LOG" > "$T/bin/xinguos-session-select"; chmod +x "$T/bin/xinguos-session-select"
+@test "queda rápida: já na primeira volta para o Desktop e deixa o aviso (nunca reabre o Gaming)" {
+  mkdir -p "$T/bin"; printf '#!/usr/bin/env bash
+echo "xinguos-session-select $*" >> "%s"
+' "$LOG" > "$T/bin/xinguos-session-select"; chmod +x "$T/bin/xinguos-session-select"
   sessao 1 5
   [ "$status" -eq 1 ]
-  [ "$(cat "$XINGUOS_ESTADO/gaming-falhas")" = 1 ]
-  run grep -q "xinguos-session-select --proxima desktop" "$LOG"
-  [ "$status" -ne 0 ]
-  sessao 1 5
   grep -qx "xinguos-session-select --proxima desktop" "$LOG"
   [ -e "$XINGUOS_ESTADO/gaming-aviso" ]
-  [ "$(cat "$XINGUOS_ESTADO/gaming-falhas")" = 0 ]
+  [ "$(cat "$XINGUOS_ESTADO/gaming-falhas")" = 1 ]
 }
 
 @test "sessão longa zera o contador; sair do Steam leva para a Área de Trabalho" {
-  mkdir -p "$T/bin"; printf '#!/usr/bin/env bash\necho "xinguos-session-select $*" >> "%s"\n' "$LOG" > "$T/bin/xinguos-session-select"; chmod +x "$T/bin/xinguos-session-select"
+  mkdir -p "$T/bin"; printf '#!/usr/bin/env bash
+echo "xinguos-session-select $*" >> "%s"
+' "$LOG" > "$T/bin/xinguos-session-select"; chmod +x "$T/bin/xinguos-session-select"
   sessao 1 5
+  rm -f "$XINGUOS_ESTADO/gaming-aviso"; : > "$LOG"
   sessao 0 300
   [ "$(cat "$XINGUOS_ESTADO/gaming-falhas")" = 0 ]
   grep -qx "xinguos-session-select --proxima desktop" "$LOG"
@@ -144,11 +145,12 @@ sessao() {  # sessao <rc> <duração>
 }
 
 @test "queda rápida conta mesmo com saída 0 (o gamescope-session-plus sempre sai 0)" {
-  mkdir -p "$T/bin"; printf '#!/usr/bin/env bash\necho "xinguos-session-select $*" >> "%s"\n' "$LOG" > "$T/bin/xinguos-session-select"; chmod +x "$T/bin/xinguos-session-select"
+  mkdir -p "$T/bin"; printf '#!/usr/bin/env bash
+echo "xinguos-session-select $*" >> "%s"
+' "$LOG" > "$T/bin/xinguos-session-select"; chmod +x "$T/bin/xinguos-session-select"
   mkdir -p "$XINGUOS_ETC"; echo "MODO_GAMING=completo" > "$XINGUOS_ETC/gaming.conf"
   sessao 0 4
   [ "$(cat "$XINGUOS_ESTADO/gaming-falhas")" = 1 ]
-  sessao 0 4
   grep -qx "xinguos-session-select --proxima desktop" "$LOG"
   [ -e "$XINGUOS_ESTADO/gaming-aviso" ]
 }
@@ -241,6 +243,25 @@ sessao() {  # sessao <rc> <duração>
   grep -qx "steam -shutdown" "$LOG"
   [ -e "$XINGUOS_ESTADO/troca-pedida" ]
   autologin | grep -qx "Session=plasma.desktop"
+}
+
+@test "pedir o Gaming de dentro do Gaming (Win+Shift+G de novo) vai para a Área de Trabalho" {
+  mkdir -p "$T/bin"
+  printf '#!/usr/bin/env bash
+echo "steam $*" >> "%s"
+' "$LOG" > "$T/bin/steam"; chmod +x "$T/bin/steam"
+  PATH="$T/bin:$PATH" XDG_CURRENT_DESKTOP=gamescope:KDE XINGUOS_ESPERA_TROCA=0 run bash "$G/xinguos-session-select" gaming
+  [ "$status" -eq 0 ]
+  autologin | grep -qx "Session=plasma.desktop"
+  grep -qx "steam -shutdown" "$LOG"
+  grep -q 'já no Gaming' "$XINGUOS_ESTADO/gaming-sessao.log"
+}
+
+@test "a troca registra o que foi pedido e quem pediu (o botão do Steam passa pelo steamos-session-select)" {
+  run bash "$G/xinguos-session-select" plasma-wayland-persistent
+  [ "$status" -eq 0 ]
+  cat "$XINGUOS_ESTADO/gaming-sessao.log"
+  grep -q 'pedido=plasma-wayland-persistent por=' "$XINGUOS_ESTADO/gaming-sessao.log"
 }
 
 @test "--proxima só grava o autologin, sem encerrar nada" {

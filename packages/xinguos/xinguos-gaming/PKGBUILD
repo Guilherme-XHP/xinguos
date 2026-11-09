@@ -1,11 +1,11 @@
 pkgname=xinguos-gaming
 pkgver=0.1.0
-pkgrel=3
+pkgrel=4
 pkgdesc="Gaming Mode do XInguOS: sessão Steam estilo Steam Deck, troca Gaming ↔ Desktop sem senha, MangoHud e GameMode"
 arch=(any)
 url="https://github.com/Guilherme-XHP/xinguos"
 license=(GPL-3.0-or-later)
-depends=(steam gamescope gamescope-session-git gamescope-session-steam-git mangohud lib32-mangohud
+depends=(steam xorg-xwininfo gamescope gamescope-session-git gamescope-session-steam-git mangohud lib32-mangohud
          gamemode lib32-gamemode kwin polkit libnotify xinguos-hwdetect)
 optdepends=('heroic-games-launcher-bin: jogos da Epic, GOG e Amazon')
 install=xinguos-gaming.install

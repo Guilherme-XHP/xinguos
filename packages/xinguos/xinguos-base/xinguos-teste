@@ -113,8 +113,12 @@ gpu=$(lspci 2>/dev/null | grep -iE 'vga|3d controller' | head -1)
 if [ -n "$gpu" ]; then
   ok "placa de vídeo: ${gpu#*: }"
   if grep -qi nvidia <<<"$gpu"; then
-    if [ "$(cat /sys/module/nvidia_drm/parameters/modeset 2>/dev/null)" = Y ]; then
+    if [ "$(cat "$R/sys/module/nvidia_drm/parameters/modeset" 2>/dev/null)" = Y ]; then
       ok "NVIDIA: driver carregado com modeset (Wayland ok)"
+    elif ! $root; then
+      # o parâmetro só é legível pelo root: sem sudo, não dá para saber (no PC real
+      # o Plasma Wayland rodando já mostrava que estava tudo certo)
+      aviso "NVIDIA: modeset não conferido" "rode com sudo: sudo xinguos-teste"
     else
       falha "NVIDIA: driver sem modeset ou não carregado" "lsmod | grep nvidia; veja a seção 'placa de vídeo'"
     fi
