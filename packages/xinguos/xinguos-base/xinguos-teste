@@ -92,7 +92,7 @@ if existe /usr/share/wayland-sessions/xinguos-gaming.desktop && existe /usr/lib/
 else
   falha "sessão XInguOS Gaming não instalada" "pacote xinguos-gaming"
 fi
-existe /usr/share/wayland-sessions/plasma.desktop && ok "sessão Plasma instalada" || falha "sessão Plasma não instalada"
+if existe /usr/share/wayland-sessions/plasma.desktop; then ok "sessão Plasma instalada"; else falha "sessão Plasma não instalada"; fi
 modo=$(xinguos-session-select --status 2>/dev/null | sed -n 's/^modo=//p')
 if [ -n "$modo" ]; then
   ok "modo do Gaming: $modo"
@@ -116,7 +116,11 @@ if [ -z "$R" ] && tem systemctl; then
   else
     estado=$(systemctl --user -M "$usuario@" is-active xinguos-foco 2>/dev/null)
   fi
-  [ "$estado" = active ] && ok "Foco rodando" || aviso "Foco não está rodando (${estado:-?})" "systemctl --user status xinguos-foco"
+  if [ "$estado" = active ]; then
+    ok "Foco rodando"
+  else
+    aviso "Foco não está rodando (${estado:-?})" "systemctl --user status xinguos-foco"
+  fi
 fi
 
 # 6. tema
@@ -130,7 +134,11 @@ fi
 # 7. serviços com falha
 if [ -z "$R" ] && tem systemctl; then
   falhos=$(systemctl --failed --no-legend --plain 2>/dev/null | awk '{print $1}' | xargs)
-  [ -z "$falhos" ] && ok "nenhum serviço com falha" || falha "serviços com falha: $falhos" "veja a seção 'journal'"
+  if [ -z "$falhos" ]; then
+    ok "nenhum serviço com falha"
+  else
+    falha "serviços com falha: $falhos" "veja a seção 'journal'"
+  fi
 fi
 
 # --- log completo ---
