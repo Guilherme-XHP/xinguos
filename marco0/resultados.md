@@ -7,7 +7,7 @@
 
 | # | Teste | Resultado (ok / ok com ajuste / falhou) | Notas | Plano B usado |
 |---|---|---|---|---|
-| 0 | Boot da ISO pelo Ventoy | ok com ajuste | Na 1ª tentativa o GRUB deu `verification requested but nobody cares: /arch/boot/x86_64/vmlinuz-...` e `you need to load the kernel first`; depois bootou. `nvidia-smi`: GTX 1060 6GB, 170 MiB em uso; modeset `Y`; sessão `wayland`; Plasma entrou sozinho como `xingu`; Steam abriu | (como passou do erro?) |
+| 0 | Boot da ISO pelo Ventoy | ok com ajuste | Na 1ª tentativa o GRUB deu `verification requested but nobody cares: /arch/boot/x86_64/vmlinuz-...` e `you need to load the kernel first`; depois bootou. `nvidia-smi`: GTX 1060 6GB, 170 MiB em uso; modeset `Y`; sessão `wayland`; Plasma entrou sozinho como `xingu`; Steam abriu | O modo normal do Ventoy falha; bootou escolhendo **outro modo do Ventoy** (anotar o nome exato). ⚠️ Conferir se a persistência funciona nesse modo |
 | 1 | Plasma Wayland estável com o 580xx | parcial | Subiu limpo, sem tela preta. Faltam os 15 minutos de uso | |
 | 2 | `gamescope -e -- steam -gamepadui` (tela preta?) | | | |
 | 3 | Troca de sessão Gaming ↔ Desktop (3 ciclos) | | | |
