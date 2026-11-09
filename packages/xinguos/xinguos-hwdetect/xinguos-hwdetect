@@ -1,0 +1,193 @@
+#!/usr/bin/env bash
+# xinguos-hwdetect — detecta a GPU e escolhe o driver certo para o XInguOS.
+#
+# uso:
+#   xinguos-hwdetect --detectar                    imprime perfil=, pacotes=, gaming=, aviso=
+#   xinguos-hwdetect --apply [--forcar <perfil>]   instala o driver do perfil (root)
+#   xinguos-hwdetect --hook                        usado pelo hook do pacman: só detecta e avisa
+#   xinguos-hwdetect --guard                       sai 1 se alguma GPU só aceita o driver 580xx (hook do guard)
+#
+# ambiente (testes): XINGUOS_LSPCI_ARQUIVO, XINGUOS_ETC, XINGUOS_MODPROBE_DIR
+set -euo pipefail
+
+die() { echo "xinguos-hwdetect: $*" >&2; exit 2; }
+
+PERFIS_DE_DRIVER="nvidia-580xx nvidia-open amd intel"
+MARCA_GERADO="# gerado pelo xinguos-hwdetect (apague esta linha para fixar a sua escolha)"
+
+ler_lspci() {
+  if [ -n "${XINGUOS_LSPCI_ARQUIVO:-}" ]; then
+    cat "$XINGUOS_LSPCI_ARQUIVO"
+  else
+    lspci -nn
+  fi
+}
+
+# Uma linha "vendor:device" por GPU (classes 0300 VGA, 0302 3D, 0380 display).
+gpus() {
+  # o vendor:device é o ÚLTIMO [xxxx:xxxx] da linha (o .* guloso garante isso)
+  ler_lspci | grep -E '\[03(00|02|80)\]' | sed -E 's/.*\[([0-9a-f]{4}:[0-9a-f]{4})\].*/\1/' || true
+}
+
+# Perfil de UMA GPU, a partir de "vendor:device".
+perfil_da_gpu() {
+  local vendor=${1%%:*} device=${1##*:} id
+  case "$vendor" in
+    10de)
+      id=$((16#$device))
+      if [ "$id" -lt $((16#1340)) ]; then echo nvidia-legada
+      elif [ "$id" -lt $((16#1E00)) ]; then echo nvidia-580xx
+      else echo nvidia-open
+      fi
+      ;;
+    1002) echo amd ;;
+    8086) echo intel ;;
+    *) echo desconhecida ;;
+  esac
+}
+
+detectar_perfil() {
+  local lista n
+  lista=$(gpus)
+  n=$(printf '%s' "$lista" | grep -c . || true)
+  if [ "$n" -eq 0 ]; then echo desconhecida; return; fi
+  if [ "$n" -gt 1 ]; then echo varias; return; fi
+  perfil_da_gpu "$lista"
+}
+
+# Aviso do caso "várias GPUs": lista cada uma e sugere o perfil de driver mais provável
+# (NVIDIA > AMD > Intel, já que a iGPU costuma ser a menos importante).
+aviso_varias() {
+  local g p lista="" sugestao=""
+  for g in $(gpus); do
+    p=$(perfil_da_gpu "$g")
+    lista="${lista:+$lista, }$p ($g)"
+    case "$p" in
+      nvidia-580xx | nvidia-open) sugestao=$p ;;
+      amd) if [ -z "$sugestao" ] || [ "$sugestao" = intel ]; then sugestao=amd; fi ;;
+      intel) [ -n "$sugestao" ] || sugestao=intel ;;
+    esac
+  done
+  if [ -n "$sugestao" ]; then
+    echo "mais de uma GPU encontrada: $lista; nada foi instalado. Para usar $sugestao, rode: sudo xinguos-hwdetect --apply --forcar $sugestao"
+  else
+    echo "mais de uma GPU encontrada: $lista; nada foi instalado. Para escolher, rode: sudo xinguos-hwdetect --apply --forcar <perfil> (válidos: $PERFIS_DE_DRIVER)"
+  fi
+}
+
+# Define as variáveis perfil, pacotes, gaming e aviso a partir do perfil dado.
+dados_do_perfil() {
+  perfil=$1
+  pacotes=""
+  gaming=compativel
+  aviso=""
+  case "$perfil" in
+    nvidia-580xx) pacotes="nvidia-580xx-dkms nvidia-580xx-utils lib32-nvidia-580xx-utils" ;;
+    nvidia-open) pacotes="nvidia-open-dkms nvidia-utils lib32-nvidia-utils"; gaming=completo ;;
+    amd) pacotes="mesa lib32-mesa vulkan-radeon lib32-vulkan-radeon"; gaming=completo ;;
+    intel) pacotes="mesa lib32-mesa vulkan-intel lib32-vulkan-intel"; gaming=completo ;;
+    varias) aviso=$(aviso_varias) ;;
+    nvidia-legada) aviso="GPU NVIDIA antiga demais para o driver 580; usando o driver livre (nouveau)" ;;
+    desconhecida) aviso="nenhuma GPU reconhecida; nada foi instalado" ;;
+    *) die "perfil inválido: $perfil (válidos: $PERFIS_DE_DRIVER)" ;;
+  esac
+}
+
+imprimir() {
+  printf 'perfil=%s\npacotes=%s\ngaming=%s\naviso=%s\n' "$perfil" "$pacotes" "$gaming" "$aviso"
+}
+
+etc_dir=${XINGUOS_ETC:-/etc/xinguos}
+modprobe_dir=${XINGUOS_MODPROBE_DIR:-/etc/modprobe.d}
+
+# Grava o modo do Gaming Mode, só para perfis de driver de verdade (sem GPU conhecida,
+# não há o que decidir). Nunca toca num arquivo do usuário; um arquivo gerado por este
+# script (com a marca) pode ser substituído quando $1 = substituir (--apply/--forcar).
+gravar_gaming() {
+  local f="$etc_dir/gaming.conf"
+  case " $PERFIS_DE_DRIVER " in *" $perfil "*) ;; *) return 0 ;; esac
+  if [ -e "$f" ]; then
+    [ "${1:-}" = substituir ] && grep -qxF "$MARCA_GERADO" "$f" || return 0
+  fi
+  mkdir -p "$etc_dir"
+  printf '%s\nMODO_GAMING=%s\n' "$MARCA_GERADO" "$gaming" > "$f"
+}
+
+apply() {
+  local forcado=${1:-}
+  if [ -n "$forcado" ]; then
+    case " $PERFIS_DE_DRIVER " in
+      *" $forcado "*) ;;
+      *) die "perfil inválido: $forcado (válidos: $PERFIS_DE_DRIVER)" ;;
+    esac
+    dados_do_perfil "$forcado"
+  else
+    dados_do_perfil "$(detectar_perfil)"
+  fi
+  imprimir
+  if [ -n "$pacotes" ]; then
+    # interativo de propósito: trocar de driver pede confirmação de conflito
+    # shellcheck disable=SC2086
+    pacman -S --needed $pacotes || { echo "xinguos-hwdetect: o pacman falhou; nada foi alterado" >&2; exit 1; }
+  fi
+  case "$perfil" in
+    nvidia-580xx | nvidia-open)
+      mkdir -p "$modprobe_dir"
+      echo "options nvidia_drm modeset=1" > "$modprobe_dir/xinguos-nvidia.conf"
+      ;;
+  esac
+  gravar_gaming substituir
+}
+
+# Chamado pelo hook do pacman: nunca instala nada (o banco está travado) e nunca falha.
+hook() {
+  local p falta=false
+  dados_do_perfil "$(detectar_perfil)"
+  gravar_gaming || true
+  for p in $pacotes; do
+    pacman -Q "$p" >/dev/null 2>&1 || falta=true
+  done
+  if $falta; then
+    echo "xinguos-hwdetect: para a sua GPU ($perfil), rode: sudo xinguos-hwdetect --apply"
+  fi
+  if [ -n "$aviso" ]; then
+    echo "xinguos-hwdetect: $aviso"
+  fi
+}
+
+# Chamado pelo hook PreTransaction 10-xinguos-nvidia-guard: cancela se QUALQUER GPU da
+# máquina for Maxwell/Pascal/Volta (inclusive com a iGPU visível ao lado).
+guard() {
+  local g
+  for g in $(gpus); do
+    if [ "$(perfil_da_gpu "$g")" = nvidia-580xx ]; then
+      echo "xinguos-nvidia-guard: esta GPU (Maxwell/Pascal/Volta, $g) só funciona com o driver 580xx. A transação foi cancelada para não deixar o sistema sem vídeo. Use os pacotes nvidia-580xx-* do [xinguos]." >&2
+      exit 1
+    fi
+  done
+}
+
+case "${1:-}" in
+  --detectar)
+    dados_do_perfil "$(detectar_perfil)"
+    imprimir
+    ;;
+  --apply)
+    if [ "${2:-}" = --forcar ]; then
+      [ -n "${3:-}" ] || die "uso: xinguos-hwdetect --apply --forcar <perfil> (válidos: $PERFIS_DE_DRIVER)"
+      apply "$3"
+    else
+      apply
+    fi
+    ;;
+  --hook)
+    hook || true
+    exit 0
+    ;;
+  --guard)
+    guard
+    ;;
+  *)
+    die "uso: xinguos-hwdetect --detectar | --apply [--forcar <perfil>] | --hook | --guard"
+    ;;
+esac

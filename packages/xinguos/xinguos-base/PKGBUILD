@@ -1,0 +1,32 @@
+pkgname=xinguos-base
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="Base do XInguOS: desempenho (zram, oomd, I/O), serviços, snapshots e ferramentas"
+arch=(any)
+url="https://github.com/Guilherme-XHP/xinguos"
+license=(GPL-3.0-or-later)
+depends=(
+  xinguos-keyring xinguos-hwdetect
+  intel-ucode amd-ucode linux-firmware
+  pipewire pipewire-pulse pipewire-jack wireplumber
+  networkmanager bluez bluez-utils
+  zram-generator
+  btrfs-progs snapper snap-pac grub-btrfs
+  paru-bin flatpak
+)
+install=xinguos-base.install
+source=(zram-generator.conf 90-xinguos.sysctl.conf 60-xinguos-ioschedulers.rules
+        90-xinguos-journald.conf 90-xinguos-oomd-user.conf 90-xinguos-oomd-root.conf
+        snapper-xinguos)
+sha256sums=(SKIP SKIP SKIP SKIP SKIP SKIP SKIP)
+
+# Tudo em diretórios de fornecedor: qualquer arquivo do usuário em /etc tem prioridade.
+package() {
+  install -Dm644 zram-generator.conf "$pkgdir/usr/lib/systemd/zram-generator.conf"
+  install -Dm644 90-xinguos.sysctl.conf "$pkgdir/usr/lib/sysctl.d/90-xinguos.conf"
+  install -Dm644 60-xinguos-ioschedulers.rules "$pkgdir/usr/lib/udev/rules.d/60-xinguos-ioschedulers.rules"
+  install -Dm644 90-xinguos-journald.conf "$pkgdir/usr/lib/systemd/journald.conf.d/90-xinguos.conf"
+  install -Dm644 90-xinguos-oomd-user.conf "$pkgdir/usr/lib/systemd/system/user@.service.d/90-xinguos-oomd.conf"
+  install -Dm644 90-xinguos-oomd-root.conf "$pkgdir/usr/lib/systemd/system/-.slice.d/90-xinguos-oomd.conf"
+  install -Dm644 snapper-xinguos "$pkgdir/usr/share/snapper/config-templates/xinguos"
+}

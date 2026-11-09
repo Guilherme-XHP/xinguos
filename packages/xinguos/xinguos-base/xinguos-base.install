@@ -1,0 +1,13 @@
+post_install() {
+  systemctl enable systemd-oomd.service fstrim.timer NetworkManager.service bluetooth.service
+  if ! flatpak remotes --system 2>/dev/null | grep -q flathub; then
+    flatpak remote-add --if-not-exists --system flathub https://dl.flathub.org/repo/flathub.flatpakrepo ||
+      echo "xinguos-base: aviso: não consegui adicionar o Flathub agora (sem internet?). Depois rode: flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo"
+  fi
+  return 0
+}
+
+post_upgrade() {
+  # de propósito, não reabilita serviços que o usuário desligou
+  return 0
+}

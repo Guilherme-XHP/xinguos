@@ -18,4 +18,12 @@ pacman -Q xinguos-keyring
 
 # driver da GTX 10xx: baixa e verifica as assinaturas, sem instalar
 pacman -Sw --noconfirm nvidia-580xx-utils nvidia-580xx-dkms lib32-nvidia-580xx-utils
+# xinguos-hwdetect instalado de verdade: o container não tem GPU conhecida
+pacman -S --noconfirm xinguos-hwdetect
+xinguos-hwdetect --detectar | tee /tmp/hwdetect.txt
+grep -qx 'perfil=desconhecida' /tmp/hwdetect.txt
+test -f /usr/share/libalpm/hooks/10-xinguos-nvidia-guard.hook
+
+# toda a árvore de dependências da base resolve com repos oficiais + [xinguos], sem AUR
+pacman -Sw --noconfirm xinguos-base xinguos-kernels
 echo "smoke-repo: ok"

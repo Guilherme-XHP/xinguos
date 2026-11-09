@@ -57,3 +57,21 @@ setup_file() {
   [ -f "$PERFIL/airootfs/usr/local/bin/criar-persistencia" ]
   grep -qF '["/usr/local/bin/criar-persistencia"]="0:0:755"' "$PERFIL/profiledef.sh"
 }
+
+@test "ISO leva xinguos-base e xinguos-hwdetect, mas não os kernels extras" {
+  grep -qx xinguos-base "$PERFIL/packages.x86_64"
+  grep -qx xinguos-hwdetect "$PERFIL/packages.x86_64"
+  run grep -xE 'xinguos-kernels|linux-zen|linux-lts' "$PERFIL/packages.x86_64"
+  [ "$status" -ne 0 ]
+}
+
+@test "ISO declara pipewire-jack (senão o pacstrap escolhe jack2 e conflita com o xinguos-base)" {
+  grep -qx pipewire-jack "$PERFIL/packages.x86_64"
+}
+
+@test "live tem espelhos do pacman configurados (senão pacman -Sy falha)" {
+  run grep -E '^Server = https://' "$PERFIL/airootfs/etc/pacman.d/mirrorlist"
+  echo "$output"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *'geo.mirror.pkgbuild.com/$repo/os/$arch'* ]]
+}

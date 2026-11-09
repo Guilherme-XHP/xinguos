@@ -12,6 +12,7 @@ firefox
 xdg-desktop-portal-kde
 pipewire
 pipewire-pulse
+pipewire-jack
 wireplumber
 networkmanager
 linux-headers
@@ -30,3 +31,5 @@ github-cli
 sudo
 python
 e2fsprogs
+xinguos-base
+xinguos-hwdetect

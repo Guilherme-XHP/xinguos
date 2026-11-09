@@ -1,0 +1,16 @@
+pkgname=xinguos-hwdetect
+pkgver=0.1.0
+pkgrel=2
+pkgdesc="Detecta a GPU e escolhe o driver certo no XInguOS (protege GTX 10xx do driver 590)"
+arch=(any)
+url="https://github.com/Guilherme-XHP/xinguos"
+license=(GPL-3.0-or-later)
+depends=(pciutils)
+source=(xinguos-hwdetect 10-xinguos-nvidia-guard.hook 90-xinguos-hwdetect.hook)
+sha256sums=(SKIP SKIP SKIP)
+
+package() {
+  install -Dm755 xinguos-hwdetect "$pkgdir/usr/bin/xinguos-hwdetect"
+  install -Dm644 10-xinguos-nvidia-guard.hook "$pkgdir/usr/share/libalpm/hooks/10-xinguos-nvidia-guard.hook"
+  install -Dm644 90-xinguos-hwdetect.hook "$pkgdir/usr/share/libalpm/hooks/90-xinguos-hwdetect.hook"
+}

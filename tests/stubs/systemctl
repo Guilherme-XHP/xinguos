@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# stub do systemctl para os testes
+echo "systemctl $*" >> "${SYSTEMCTL_LOG:-/dev/null}"

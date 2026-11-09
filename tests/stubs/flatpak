@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# stub do flatpak para os testes: sem remotes; remote-add falha (simula sem rede)
+case "${1:-}" in
+  remotes) exit 0 ;;
+  remote-add) exit 1 ;;
+esac
