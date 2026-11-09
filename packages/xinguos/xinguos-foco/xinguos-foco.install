@@ -1,0 +1,8 @@
+post_install() {
+  # liga o daemon na sessão gráfica de todo usuário
+  systemctl --global enable xinguos-foco.service || true
+}
+
+pre_remove() {
+  systemctl --global disable xinguos-foco.service || true
+}

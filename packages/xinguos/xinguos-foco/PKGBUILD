@@ -1,0 +1,29 @@
+pkgname=xinguos-foco
+pkgver=0.1.0
+pkgrel=3
+pkgdesc="Foco do XInguOS: prioridade de CPU/disco para o app em foco e tempo de uso (Bem-Estar)"
+arch=(any)
+url="https://github.com/Guilherme-XHP/xinguos"
+license=(GPL-3.0-or-later)
+depends=(python python-dbus-fast pyside6 systemd kwin swayidle)
+backup=(etc/xdg/xinguos/foco.toml)
+install=xinguos-foco.install
+
+# o código mora junto deste PKGBUILD (como no xinguos-desktop): usa $startdir
+package() {
+  cd "$startdir"
+  local lib="$pkgdir/usr/lib/xinguos/foco" m
+  for m in xinguos_foco xinguos_foco_painel; do
+    install -dm755 "$lib/$m"
+    install -m644 "$m"/*.py "$lib/$m/"
+  done
+  install -m644 xinguos_foco_painel/Main.qml "$lib/xinguos_foco_painel/Main.qml"
+  install -Dm755 xinguos-foco "$pkgdir/usr/bin/xinguos-foco"
+  install -Dm755 xinguos-foco-painel "$pkgdir/usr/bin/xinguos-foco-painel"
+  install -Dm644 kwin/xinguos-foco/metadata.json "$pkgdir/usr/share/kwin/scripts/xinguos-foco/metadata.json"
+  install -Dm644 kwin/xinguos-foco/contents/code/main.js "$pkgdir/usr/share/kwin/scripts/xinguos-foco/contents/code/main.js"
+  install -Dm644 foco.toml.padrao "$pkgdir/etc/xdg/xinguos/foco.toml"
+  install -Dm644 kwinrc "$pkgdir/etc/xdg/kwinrc"
+  install -Dm644 xinguos-foco.service "$pkgdir/usr/lib/systemd/user/xinguos-foco.service"
+  install -Dm644 org.xinguos.foco.desktop "$pkgdir/usr/share/applications/org.xinguos.foco.desktop"
+}

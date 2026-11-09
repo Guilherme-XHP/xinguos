@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Foco
+GenericName=Tempo de uso e prioridades
+Comment=Foco: tempo de uso e prioridades
+Exec=xinguos-foco-painel
+Icon=preferences-system-time
+Categories=Settings;System;
+Keywords=bem-estar;tempo;uso;prioridade;limite;autotile;foco;

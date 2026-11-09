@@ -163,3 +163,11 @@ aj() {
   "$PL"
   grep -F -- "--key ignoreClass" "$KWRITE_LOG" | grep -qF ",[steam_app_]"
 }
+
+@test "xinguos-desktop depende do xinguos-foco, que vem antes no ordem.txt" {
+  run bash -c "source $D/PKGBUILD; printf '%s\n' \"\${depends[@]}\""
+  grep -qx xinguos-foco <<<"$output"
+  f=$(grep -nx 'xinguos/xinguos-foco' packages/ordem.txt | cut -d: -f1)
+  d=$(grep -nx 'xinguos/xinguos-desktop' packages/ordem.txt | cut -d: -f1)
+  [ -n "$f" ] && [ "$f" -lt "$d" ]
+}

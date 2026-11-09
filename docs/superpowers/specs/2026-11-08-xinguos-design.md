@@ -285,8 +285,12 @@ O Xingu delegou o design do painel ("deixar você fazendo o rolê todo"). Estas 
     3. **Prioridades e limites:** lista dos apps já vistos, cada um com um seletor `Sempre prioridade / Normal / Segundo plano` e um campo opcional "limite diário (min)". Salva direto no `foco.toml`, e o daemon recarrega sozinho.
 - **Identificação do app:** o `desktopFileName` da janela, que o KWin informa. Se vier vazio, usa o `resourceClass`. Nome e ícone saem do `.desktop`.
 - **Dados:** SQLite com uma tabela de intervalos (`app`, `inicio`, `fim`, em segundos Unix), guardados por **90 dias**.
-- **Ociosidade:** o daemon consulta `org.freedesktop.ScreenSaver.GetSessionIdleTime` a cada 30 s. Com mais de 120 s parado, fecha o intervalo atual.
-- **Avisos:** limite diário e a pergunta do autotile (6.4) usam `org.freedesktop.Notifications`, com botões de ação. Quem faz é o próprio daemon, sem Python.
+- **Ociosidade:** com 120 s parado, o daemon fecha o intervalo atual, recuando até o momento em que o usuário parou.
+  - No Wayland, o KDE responde `NotSupported` ao `GetSessionIdleTime`. Quem avisa é o **`swayidle`** (`timeout 120`), que usa o protocolo ext-idle-notify do KWin.
+  - O swayidle respeita os inibidores, então jogo ou vídeo que segura a tela continua contando como uso.
+  - Sem swayidle (por exemplo no X11), o daemon consulta `GetSessionIdleTime` a cada 30 s (o KDE responde em ms).
+  - O pedaço em andamento é gravado a cada 30 s, para os totais e os limites ficarem em dia.
+- **Avisos:** o limite diário vira uma notificação simples (`org.freedesktop.Notifications`, sem botões), uma vez por app por dia, com o nome do app tirado do `.desktop`.
 - **Prioridade:** como na 7.2, via `CPUWeight`/`IOWeight` no `app-*.scope` do app em foco. Jogos lançados pelo Steam herdam o scope do Steam, então o Steam inteiro ganha peso enquanto o jogo está em foco.
 - **Ficam para depois (YAGNI):** widget na barra mostrando o app em foco; bloquear o app quando o limite estoura (o spec diz que só avisa); exportar dados.
 - **Daemon em Python, não em Rust** (muda a 7.2):
@@ -298,6 +302,7 @@ O Xingu delegou o design do painel ("deixar você fazendo o rolê todo"). Estas 
   - O KWin e o Krohnkite não informam se o autotile está ligado, então o daemon não teria como perguntar só nessa hora.
   - No lugar dela, a aba "Prioridades e limites" ganha uma coluna **Autotile (sim/não)** por app. "Não" acrescenta o app ao `ignoreClass` do Krohnkite, e vale a partir do próximo login.
   - O estado do Win+T **não** sobrevive ao reiniciar: o Krohnkite volta para o layout flutuante.
+  - "Não" grava no `ignoreClass` o id do app e também o nome curto (`org.kde.kdenlive` → `kdenlive`), porque no XWayland a classe da janela é o nome curto.
 - **I/O por usuário:** o `xinguos-base` passa a delegar o controlador `io` para o `user@.service` (`Delegate=cpu cpuset io memory pids`). Sem isso, o `IOWeight` nos apps do usuário é ignorado.
 
 ## 8. Apps

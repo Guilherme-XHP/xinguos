@@ -1,0 +1,14 @@
+{
+    "KPackageStructure": "KWin/Script",
+    "KPlugin": {
+        "Authors": [{ "Name": "XInguOS" }],
+        "Description": "Avisa o xinguos-foco qual app está em foco (tempo de uso e prioridade)",
+        "EnabledByDefault": true,
+        "Id": "xinguos-foco",
+        "License": "MIT",
+        "Name": "XInguOS Foco",
+        "Version": "0.1.0"
+    },
+    "X-Plasma-API": "javascript",
+    "X-Plasma-MainScript": "code/main.js"
+}

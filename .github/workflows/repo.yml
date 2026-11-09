@@ -18,9 +18,15 @@ jobs:
       - name: Preparar ambiente Arch
         run: bash tools/ci-setup.sh
       - name: shellcheck
-        run: shellcheck tools/*.sh packages/xinguos/xinguos-desktop/xinguos-primeiro-login packages/xinguos/xinguos-hwdetect/xinguos-hwdetect marco0/criar-persistencia.sh iso/teste/airootfs/usr/local/bin/xinguos-teste-usuario tests/smoke-repo.sh marco0/prototipo/steamos-session-select marco0/prototipo/xinguos-escrever-sessao marco0/prototipo/instalar.sh
+        run: shellcheck tools/*.sh packages/xinguos/xinguos-foco/xinguos-foco packages/xinguos/xinguos-foco/xinguos-foco-painel packages/xinguos/xinguos-desktop/xinguos-primeiro-login packages/xinguos/xinguos-hwdetect/xinguos-hwdetect marco0/criar-persistencia.sh iso/teste/airootfs/usr/local/bin/xinguos-teste-usuario tests/smoke-repo.sh marco0/prototipo/steamos-session-select marco0/prototipo/xinguos-escrever-sessao marco0/prototipo/instalar.sh
       - name: bats
         run: bats tests/
+      - name: script do KWin (foco)
+        run: node packages/xinguos/xinguos-foco/tests/kwin.test.js
+      - name: pytest (foco)
+        run: python -m pytest -q packages/xinguos/xinguos-foco/tests -m "not dbus"
+      - name: pytest (foco, D-Bus)
+        run: dbus-run-session -- python -m pytest -q packages/xinguos/xinguos-foco/tests -m dbus
 
   build:
     concurrency:
