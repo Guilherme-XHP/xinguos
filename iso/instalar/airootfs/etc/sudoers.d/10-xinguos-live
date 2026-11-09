@@ -1,0 +1,2 @@
+# SÓ NO LIVE: o usuário live usa sudo sem senha (o instalador roda como root).
+%wheel ALL=(ALL:ALL) NOPASSWD: ALL

@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Instalar o XInguOS
+Comment=Instala o XInguOS no computador
+Exec=sudo -E calamares
+Icon=xinguos
+Terminal=false
+Categories=System;

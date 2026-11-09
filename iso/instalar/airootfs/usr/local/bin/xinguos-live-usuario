@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# Live da ISO de instalação: cria o usuário "live" (sem senha, autologin no SDDM) e aponta
+# /run/xinguos/airootfs.sfs para o squashfs do live, que o unpackfs do Calamares copia.
+set -euo pipefail
+if ! id live >/dev/null 2>&1; then
+  useradd -m -G wheel -s /bin/bash -c "XInguOS ao vivo" live
+  passwd -d live
+fi
+mkdir -p /run/xinguos
+for s in /run/archiso/copytoram/airootfs.sfs /run/archiso/bootmnt/arch/x86_64/airootfs.sfs; do
+  if [ -f "$s" ]; then ln -sfn "$s" /run/xinguos/airootfs.sfs; break; fi
+done

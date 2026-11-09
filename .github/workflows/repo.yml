@@ -8,6 +8,10 @@ on:
         description: "Gerar também a ISO de teste ao vivo"
         type: boolean
         default: false
+      iso_instalar:
+        description: "Gerar a ISO de instalação (Calamares) e testar a instalação"
+        type: boolean
+        default: false
 
 jobs:
   testes:
@@ -18,7 +22,7 @@ jobs:
       - name: Preparar ambiente Arch
         run: bash tools/ci-setup.sh
       - name: shellcheck
-        run: shellcheck tools/*.sh iso/instalar/airootfs/usr/lib/xinguos/instalador/pos-instalacao packages/xinguos/xinguos-boasvindas/xinguos-boasvindas packages/xinguos/xinguos-branding/xinguos-os-release packages/xinguos/xinguos-foco/xinguos-foco packages/xinguos/xinguos-foco/xinguos-foco-painel packages/xinguos/xinguos-desktop/xinguos-primeiro-login packages/xinguos/xinguos-hwdetect/xinguos-hwdetect marco0/criar-persistencia.sh iso/teste/airootfs/usr/local/bin/xinguos-teste-usuario tests/smoke-repo.sh marco0/prototipo/steamos-session-select marco0/prototipo/xinguos-escrever-sessao marco0/prototipo/instalar.sh
+        run: shellcheck tools/*.sh iso/instalar/airootfs/usr/local/bin/xinguos-protege-midia iso/instalar/airootfs/usr/local/bin/xinguos-live-usuario tests/teste-instalacao.sh tests/stubs-midia/lsblk iso/instalar/airootfs/usr/lib/xinguos/instalador/pos-instalacao packages/xinguos/xinguos-boasvindas/xinguos-boasvindas packages/xinguos/xinguos-branding/xinguos-os-release packages/xinguos/xinguos-foco/xinguos-foco packages/xinguos/xinguos-foco/xinguos-foco-painel packages/xinguos/xinguos-desktop/xinguos-primeiro-login packages/xinguos/xinguos-hwdetect/xinguos-hwdetect marco0/criar-persistencia.sh iso/teste/airootfs/usr/local/bin/xinguos-teste-usuario tests/smoke-repo.sh marco0/prototipo/steamos-session-select marco0/prototipo/xinguos-escrever-sessao marco0/prototipo/instalar.sh
       - name: bats
         run: bats tests/
       - name: script do KWin (foco)
@@ -111,6 +115,43 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: xinguos-teste-iso
+          path: out-iso/
+          retention-days: 30
+          compression-level: 0
+
+  iso-instalar:
+    concurrency:
+      group: repo-x86_64
+      cancel-in-progress: false
+    needs: smoke
+    if: github.event_name == 'workflow_dispatch' && inputs.iso_instalar
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux:latest
+      # /mnt do runner tem dezenas de GB livres: o teste de instalação extrai o sistema inteiro lá
+      options: --privileged -v /mnt:/mnt
+    env:
+      XINGUOS_REPO_URL: https://github.com/${{ github.repository }}/releases/download/repo-x86_64
+    steps:
+      - uses: actions/checkout@v4
+      - name: Preparar ambiente Arch
+        run: bash tools/ci-setup.sh
+      - name: Ferramentas de boot do mkarchiso e do teste de instalação
+        run: pacman -S --noconfirm --needed grub squashfs-tools arch-install-scripts
+      - name: Confiar no [xinguos]
+        run: bash tools/confiar-xinguos.sh "$XINGUOS_REPO_URL" "${{ vars.XINGUOS_GPG_FPR }}"
+      - name: Montar a ISO de instalação
+        run: |
+          XINGUOS_ISO_NOME=xinguos tools/build-iso.sh iso/instalar out-iso
+          test -s out-iso/xinguos.iso
+          du -h out-iso/xinguos.iso
+          df -h / /mnt
+      - name: Teste de instalação (pós-instalação no chroot)
+        run: bash tests/teste-instalacao.sh out-iso/xinguos.iso /mnt/xinguos-instalacao
+      - name: Publicar como artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: xinguos-iso
           path: out-iso/
           retention-days: 30
           compression-level: 0
