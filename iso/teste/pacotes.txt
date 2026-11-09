@@ -12,6 +12,7 @@ firefox
 xdg-desktop-portal-kde
 pipewire
 pipewire-pulse
+pipewire-jack
 wireplumber
 networkmanager
 linux-headers
