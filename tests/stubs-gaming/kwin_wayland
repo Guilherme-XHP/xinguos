@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+echo "kwin_wayland $*" >> "$LOG"
+exit "${FAKE_RC:-0}"

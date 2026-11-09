@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+echo "gamescope-session-plus $*" >> "$LOG"
+exit "${FAKE_RC:-0}"

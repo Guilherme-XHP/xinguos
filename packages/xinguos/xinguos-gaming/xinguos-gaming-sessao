@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# xinguos-gaming-sessao — a sessão "XInguOS Gaming" do SDDM (spec 4.1 e 4.4).
+#   completo:   gamescope-session-plus steam (gamescope embutido + Steam + mangoapp)
+#   compatível: KWin sozinho + Steam em tela cheia (sem painéis; para GPUs onde o
+#               gamescope dá tela preta, como as GTX 10xx no driver 580xx)
+# Contador de falhas: saída ≠ 0 em menos de 60 s conta; com 2 seguidas, o próximo login
+# vai para a Área de Trabalho e fica um aviso para o Plasma mostrar. Nunca existe loop.
+set -uo pipefail
+
+ETC=${XINGUOS_ETC:-/etc/xinguos}
+ESTADO=${XINGUOS_ESTADO:-${XDG_STATE_HOME:-$HOME/.local/state}/xinguos}
+LIMITE_RAPIDA=60
+MAX_FALHAS=2
+
+modo=$(sed -n 's/^MODO_GAMING=//p' "$ETC/gaming.conf" 2>/dev/null | tail -1)
+inicio=$(date +%s)
+case "$modo" in
+  completo) gamescope-session-plus steam ;;
+  *) kwin_wayland --xwayland --exit-with-session "steam -gamepadui -steamos3" ;;
+esac
+rc=$?
+duracao=$(( $(date +%s) - inicio ))
+
+mkdir -p "$ESTADO"
+contador="$ESTADO/gaming-falhas"
+if [ "$rc" -ne 0 ] && [ "$duracao" -lt "$LIMITE_RAPIDA" ]; then
+  falhas=$(( $(cat "$contador" 2>/dev/null || echo 0) + 1 ))
+  if [ "$falhas" -ge "$MAX_FALHAS" ]; then
+    echo 0 > "$contador"
+    : > "$ESTADO/gaming-aviso"
+    echo "xinguos-gaming-sessao: o Gaming Mode caiu $falhas vezes seguidas; indo para a Área de Trabalho" >&2
+    xinguos-session-select desktop || true
+  else
+    echo "$falhas" > "$contador"
+  fi
+else
+  echo 0 > "$contador"
+fi
+exit "$rc"

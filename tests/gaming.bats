@@ -102,3 +102,62 @@ autologin() { cat "$XINGUOS_SDDM_DIR/zz-xinguos-session.conf"; }
 @test "os-session-select (gancho do steamos-session-select) repassa para o xinguos-session-select" {
   grep -qx 'exec /usr/bin/xinguos-session-select "$@"' "$G/os-session-select"
 }
+
+# --- Task 2: sessão Gaming + contador de falhas ---
+
+sessao() {  # sessao <rc> <duração>
+  export RELOGIO="$T/relogio" FAKE_RC=$1
+  printf '1000\n%s\n' "$((1000 + $2))" > "$RELOGIO"
+  PATH="$PWD/tests/stubs-gaming:$T/bin:$PATH" run bash "$G/xinguos-gaming-sessao"
+}
+
+@test "modo compatível (padrão) abre o Steam em tela cheia no KWin; completo usa o gamescope" {
+  mkdir -p "$T/bin"; printf '#!/usr/bin/env bash\necho "xinguos-session-select $*" >> "%s"\n' "$LOG" > "$T/bin/xinguos-session-select"; chmod +x "$T/bin/xinguos-session-select"
+  sessao 0 600
+  [ "$status" -eq 0 ]
+  grep -qx 'kwin_wayland --xwayland --exit-with-session steam -gamepadui -steamos3' "$LOG"
+  mkdir -p "$XINGUOS_ETC"; echo "MODO_GAMING=completo" > "$XINGUOS_ETC/gaming.conf"
+  sessao 0 600
+  grep -qx 'gamescope-session-plus steam' "$LOG"
+}
+
+@test "2 falhas rápidas seguidas: volta para o Desktop e deixa o aviso" {
+  mkdir -p "$T/bin"; printf '#!/usr/bin/env bash\necho "xinguos-session-select $*" >> "%s"\n' "$LOG" > "$T/bin/xinguos-session-select"; chmod +x "$T/bin/xinguos-session-select"
+  sessao 1 5
+  [ "$status" -eq 1 ]
+  [ "$(cat "$XINGUOS_ESTADO/gaming-falhas")" = 1 ]
+  run grep -q "xinguos-session-select desktop" "$LOG"
+  [ "$status" -ne 0 ]
+  sessao 1 5
+  grep -qx "xinguos-session-select desktop" "$LOG"
+  [ -e "$XINGUOS_ESTADO/gaming-aviso" ]
+  [ "$(cat "$XINGUOS_ESTADO/gaming-falhas")" = 0 ]
+}
+
+@test "sessão longa ou saída normal zera o contador" {
+  mkdir -p "$T/bin"; printf '#!/usr/bin/env bash\necho "xinguos-session-select $*" >> "%s"\n' "$LOG" > "$T/bin/xinguos-session-select"; chmod +x "$T/bin/xinguos-session-select"
+  sessao 1 5
+  sessao 1 300
+  [ "$(cat "$XINGUOS_ESTADO/gaming-falhas")" = 0 ]
+  sessao 1 5
+  sessao 0 3
+  [ "$(cat "$XINGUOS_ESTADO/gaming-falhas")" = 0 ]
+  run grep -q "xinguos-session-select desktop" "$LOG"
+  [ "$status" -ne 0 ]
+}
+
+@test "no Desktop, o aviso aparece uma vez e some" {
+  mkdir -p "$XINGUOS_ESTADO"; touch "$XINGUOS_ESTADO/gaming-aviso"
+  run bash "$G/xinguos-gaming-aviso"
+  [ "$status" -eq 0 ]
+  grep -q "^notify-send" "$LOG"
+  [ ! -e "$XINGUOS_ESTADO/gaming-aviso" ]
+  : > "$LOG"
+  run bash "$G/xinguos-gaming-aviso"
+  [ ! -s "$LOG" ]
+}
+
+@test "sessão XInguOS Gaming registrada no SDDM" {
+  grep -qx "Exec=/usr/lib/xinguos/xinguos-gaming-sessao" "$G/xinguos-gaming.desktop"
+  grep -qx "Name=XInguOS Gaming" "$G/xinguos-gaming.desktop"
+}
