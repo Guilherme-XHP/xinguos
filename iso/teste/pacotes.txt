@@ -30,3 +30,5 @@ github-cli
 sudo
 python
 e2fsprogs
+xinguos-base
+xinguos-hwdetect
