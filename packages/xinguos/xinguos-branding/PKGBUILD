@@ -1,0 +1,27 @@
+pkgname=xinguos-branding
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="Identidade visual provisória do XInguOS: os-release, logo, wallpaper, SDDM e o easter egg"
+arch=(any)
+url="https://github.com/Guilherme-XHP/xinguos"
+license=(GPL-3.0-or-later)
+depends=(filesystem)
+backup=(etc/xdg/kcm-about-distrorc etc/sddm.conf.d/10-xinguos-tema.conf)
+install=xinguos-branding.install
+
+# os arquivos moram junto deste PKGBUILD: usa $startdir
+package() {
+  cd "$startdir"
+  install -Dm755 xinguos-os-release "$pkgdir/usr/lib/xinguos/xinguos-os-release"
+  install -Dm644 xinguos-os-release.hook "$pkgdir/usr/share/libalpm/hooks/xinguos-os-release.hook"
+  install -Dm644 logo/xinguos.svg "$pkgdir/usr/share/pixmaps/xinguos.svg"
+  install -Dm644 logo/xinguos.svg "$pkgdir/usr/share/icons/hicolor/scalable/apps/xinguos.svg"
+  install -Dm644 wallpaper/XInguOS/metadata.json "$pkgdir/usr/share/wallpapers/XInguOS/metadata.json"
+  install -Dm644 wallpaper/XInguOS/contents/images/1920x1080.svg \
+    "$pkgdir/usr/share/wallpapers/XInguOS/contents/images/1920x1080.svg"
+  install -Dm644 kcm-about-distrorc "$pkgdir/etc/xdg/kcm-about-distrorc"
+  install -Dm644 sddm/theme.conf.user "$pkgdir/usr/share/sddm/themes/breeze/theme.conf.user"
+  install -Dm644 sddm/10-xinguos-tema.conf "$pkgdir/etc/sddm.conf.d/10-xinguos-tema.conf"
+  # easter egg: a foto do cachorro do Xingu (o verdadeiro dono do XInguOS)
+  install -Dm644 easter-egg/cachorro.jpg "$pkgdir/usr/share/xinguos/easter-egg/cachorro.jpg"
+}
