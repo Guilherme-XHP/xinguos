@@ -2,9 +2,11 @@
 # xinguos-hwdetect — detecta a GPU e escolhe o driver certo para o XInguOS.
 #
 # uso:
-#   xinguos-hwdetect --detectar        imprime perfil=, pacotes=, gaming=, aviso=
+#   xinguos-hwdetect --detectar                    imprime perfil=, pacotes=, gaming=, aviso=
+#   xinguos-hwdetect --apply [--forcar <perfil>]   instala o driver do perfil (root)
+#   xinguos-hwdetect --hook                        usado pelo hook do pacman: só detecta e avisa
 #
-# ambiente (testes): XINGUOS_LSPCI_ARQUIVO — lê a saída de "lspci -nn" deste arquivo
+# ambiente (testes): XINGUOS_LSPCI_ARQUIVO, XINGUOS_ETC, XINGUOS_MODPROBE_DIR
 set -euo pipefail
 
 die() { echo "xinguos-hwdetect: $*" >&2; exit 2; }
@@ -67,12 +69,73 @@ imprimir() {
   printf 'perfil=%s\npacotes=%s\ngaming=%s\naviso=%s\n' "$perfil" "$pacotes" "$gaming" "$aviso"
 }
 
+etc_dir=${XINGUOS_ETC:-/etc/xinguos}
+modprobe_dir=${XINGUOS_MODPROBE_DIR:-/etc/modprobe.d}
+
+# Grava o modo do Gaming Mode só se o usuário ainda não escolheu um.
+gravar_gaming_se_ausente() {
+  if [ ! -e "$etc_dir/gaming.conf" ]; then
+    mkdir -p "$etc_dir"
+    echo "MODO_GAMING=$gaming" > "$etc_dir/gaming.conf"
+  fi
+}
+
+apply() {
+  local forcado=${1:-}
+  if [ -n "$forcado" ]; then
+    dados_do_perfil "$forcado"
+  else
+    dados_do_perfil "$(detectar_perfil)"
+  fi
+  imprimir
+  if [ -n "$pacotes" ]; then
+    # interativo de propósito: trocar de driver pede confirmação de conflito
+    # shellcheck disable=SC2086
+    pacman -S --needed $pacotes || { echo "xinguos-hwdetect: o pacman falhou; nada foi alterado" >&2; exit 1; }
+  fi
+  case "$perfil" in
+    nvidia-580xx | nvidia-open)
+      mkdir -p "$modprobe_dir"
+      echo "options nvidia_drm modeset=1" > "$modprobe_dir/xinguos-nvidia.conf"
+      ;;
+  esac
+  gravar_gaming_se_ausente
+}
+
+# Chamado pelo hook do pacman: nunca instala nada (o banco está travado) e nunca falha.
+hook() {
+  local p falta=false
+  dados_do_perfil "$(detectar_perfil)"
+  gravar_gaming_se_ausente || true
+  for p in $pacotes; do
+    pacman -Q "$p" >/dev/null 2>&1 || falta=true
+  done
+  if $falta; then
+    echo "xinguos-hwdetect: para a sua GPU ($perfil), rode: sudo xinguos-hwdetect --apply"
+  fi
+  if [ -n "$aviso" ]; then
+    echo "xinguos-hwdetect: $aviso"
+  fi
+}
+
 case "${1:-}" in
   --detectar)
     dados_do_perfil "$(detectar_perfil)"
     imprimir
     ;;
+  --apply)
+    if [ "${2:-}" = --forcar ]; then
+      [ -n "${3:-}" ] || die "uso: xinguos-hwdetect --apply --forcar <perfil>"
+      apply "$3"
+    else
+      apply
+    fi
+    ;;
+  --hook)
+    hook || true
+    exit 0
+    ;;
   *)
-    die "uso: xinguos-hwdetect --detectar"
+    die "uso: xinguos-hwdetect --detectar | --apply [--forcar <perfil>] | --hook"
     ;;
 esac

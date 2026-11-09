@@ -99,6 +99,7 @@ preparar_apply() {
   preparar_apply
   PACMAN_STATUS=1 XINGUOS_LSPCI_ARQUIVO=tests/fixtures/lspci/gtx1060.txt run "$HW" --apply
   [ "$status" -ne 0 ]
+  grep -q -- "-S --needed nvidia-580xx-dkms" "$PACMAN_LOG"
   [ ! -e "$XINGUOS_MODPROBE_DIR/xinguos-nvidia.conf" ]
   [ ! -e "$XINGUOS_ETC/gaming.conf" ]
 }
@@ -115,6 +116,7 @@ preparar_apply() {
   preparar_apply
   XINGUOS_LSPCI_ARQUIVO=tests/fixtures/lspci/gtx1060.txt run "$HW" --apply --forcar inventado
   [ "$status" -eq 2 ]
+  [[ "$output" == *"perfil inválido: inventado"* ]]
   run grep -- "-S" "$PACMAN_LOG"
   [ "$status" -ne 0 ]
 }
