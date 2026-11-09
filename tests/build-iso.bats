@@ -64,3 +64,7 @@ setup_file() {
   run grep -xE 'xinguos-kernels|linux-zen|linux-lts' "$PERFIL/packages.x86_64"
   [ "$status" -ne 0 ]
 }
+
+@test "ISO declara pipewire-jack (senão o pacstrap escolhe jack2 e conflita com o xinguos-base)" {
+  grep -qx pipewire-jack "$PERFIL/packages.x86_64"
+}
