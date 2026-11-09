@@ -309,6 +309,8 @@ O JDK padrão (`archlinux-java`) é o 21. O Android SDK completo (build-tools, p
 - Tema do SDDM baseado no Breeze, Plymouth com o logo e tema do GRUB.
 - `os-release` com `NAME="XInguOS"`, `ID=xinguos` e `ID_LIKE=arch`.
 
+**Easter egg obrigatório:** a foto do cachorro do Xingu (`branding/easter-egg/cachorro.jpg`, sem metadados, só com a etiqueta de orientação) precisa aparecer em algum lugar da distro, como piada interna. Onde e como aparece é decidido no brainstorm de branding.
+
 A identidade visual final (cores, logo, ícones, wallpapers) tem um brainstorm próprio depois da v1.
 
 ## 10. Testes
