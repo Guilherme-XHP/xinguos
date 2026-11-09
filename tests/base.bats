@@ -66,3 +66,40 @@ B=packages/xinguos/xinguos-base
   grep -qx "Delegate=cpu cpuset io memory pids" "$B/90-xinguos-delegate.conf"
   grep -q 'user@.service.d/90-xinguos-delegate.conf' "$B/PKGBUILD"
 }
+
+# --- xinguos-teste: um comando que confere tudo e grava um log para mandar ---
+
+TESTE=packages/xinguos/xinguos-base/xinguos-teste
+
+@test "xinguos-teste: sistema vazio não quebra, aponta as falhas e grava o log" {
+  T=$(mktemp -d); mkdir -p "$T/raiz" "$T/home"
+  HOME="$T/home" XINGUOS_RAIZ="$T/raiz" run bash "$TESTE"
+  echo "$output"
+  [ "$status" -eq 1 ]
+  grep -q 'FALHA.*tema escuro' <<<"$output"
+  grep -q 'FALHA.*sessão XInguOS Gaming' <<<"$output"
+  f=$(ls "$T/home"/xinguos-teste-*.txt)
+  grep -q '== resumo' "$f"
+  grep -q '== sessão Gaming' "$f"
+  grep -q "$f" <<<"$output"
+  rm -rf "$T"
+}
+
+@test "xinguos-teste: com tema, sessões e mídia protegida no lugar, dá OK" {
+  T=$(mktemp -d); R="$T/raiz"; mkdir -p "$T/home"
+  for f in /etc/os-release /usr/share/icons/Tela-XInguOS-dark/index.theme /usr/share/color-schemes/XInguOSEscuro.colors \
+           /usr/share/plasma/desktoptheme/Materia-Color/metadata.desktop /usr/share/wayland-sessions/plasma.desktop \
+           /usr/share/wayland-sessions/xinguos-gaming.desktop /usr/lib/xinguos/xinguos-gaming-sessao \
+           /usr/share/polkit-1/rules.d/49-xinguos-sessao.rules /run/xinguos/midia-protegida; do
+    mkdir -p "$R$(dirname "$f")"; echo x > "$R$f"
+  done
+  echo 'ID=xinguos' > "$R/etc/os-release"; mkdir -p "$R/run/archiso"
+  HOME="$T/home" XINGUOS_RAIZ="$R" run bash "$TESTE"
+  echo "$output"
+  grep -q 'OK.*tema escuro' <<<"$output"
+  grep -q 'OK.*sessão XInguOS Gaming' <<<"$output"
+  grep -q 'OK.*XInguOS' <<<"$output"
+  grep -q 'OK.*HD do Ventoy protegido' <<<"$output"
+  grep -q 'install -Dm755 xinguos-teste "$pkgdir/usr/bin/xinguos-teste"' packages/xinguos/xinguos-base/PKGBUILD
+  rm -rf "$T"
+}

@@ -279,3 +279,29 @@ sessao() {  # sessao <rc> <duração>
   grep -q '/usr/share/xinguos/MangoHud.conf' "$G/PKGBUILD"
   grep -q '/usr/lib/xinguos/xinguos-steam-compativel' "$G/PKGBUILD"
 }
+
+# --- diagnóstico (teste no PC real: o Gaming "abria e voltava" sem deixar rastro) ---
+
+@test "sessão Gaming registra início, modo e como terminou em gaming-sessao.log" {
+  mkdir -p "$T/bin"; printf '#!/usr/bin/env bash\necho "xinguos-session-select $*" >> "%s"\n' "$LOG" > "$T/bin/xinguos-session-select"; chmod +x "$T/bin/xinguos-session-select"
+  sessao 1 5
+  local l="$XINGUOS_ESTADO/gaming-sessao.log"
+  cat "$l"
+  grep -q 'inicio modo=compativel' "$l"
+  grep -q 'fim rc=1 duracao=5s resultado=queda falhas=1' "$l"
+  sessao 0 300
+  grep -q 'fim rc=0 duracao=300s resultado=saiu-do-steam' "$l"
+}
+
+@test "troca pedida também vai para o gaming-sessao.log" {
+  run bash "$G/xinguos-session-select" gaming
+  [ "$status" -eq 0 ]
+  grep -q 'troca para xinguos-gaming.desktop' "$XINGUOS_ESTADO/gaming-sessao.log"
+}
+
+@test "o log da sessão não cresce sem limite" {
+  mkdir -p "$T/bin"; printf '#!/usr/bin/env bash\nexit 0\n' > "$T/bin/xinguos-session-select"; chmod +x "$T/bin/xinguos-session-select"
+  mkdir -p "$XINGUOS_ESTADO"; seq 1 5000 > "$XINGUOS_ESTADO/gaming-sessao.log"
+  sessao 0 300
+  [ "$(wc -l < "$XINGUOS_ESTADO/gaming-sessao.log")" -le 500 ]
+}

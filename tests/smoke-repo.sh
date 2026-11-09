@@ -54,4 +54,15 @@ grep -qx xinguos-gaming /tmp/xinguos.txt
 grep -qx steam /tmp/xinguos.txt
 pacman -Sw --noconfirm xinguos-gaming
 pacman -Qlp /var/cache/pacman/pkg/xinguos-gaming-*.pkg.tar.zst | grep -q '/usr/lib/os-session-select$'
+# tema escuro: instala de verdade e traz ícones, Plasma style, decoração e esquema de cores
+pacman -S --noconfirm xinguos-tema
+for f in /usr/share/icons/Tela-XInguOS-dark/index.theme /usr/share/icons/Tela-XInguOS/scalable/places/default-folder.svg          /usr/share/plasma/desktoptheme/Materia-Color/metadata.json /usr/share/aurorae/themes/Materia-Dark/metadata.desktop          /usr/share/color-schemes/XInguOSEscuro.colors; do
+  [ -e "$f" ] || { echo "smoke-repo: xinguos-tema sem $f" >&2; exit 1; }
+done
+# xinguos-teste: roda num sistema que não é o XInguOS sem quebrar, aponta falhas e grava o log
+pacman -Sw --noconfirm xinguos-base
+bsdtar -xOf /var/cache/pacman/pkg/xinguos-base-*.pkg.tar.zst usr/bin/xinguos-teste > /tmp/xinguos-teste
+rc=0; HOME=/tmp bash /tmp/xinguos-teste > /tmp/xinguos-teste.out 2>&1 || rc=$?
+cat /tmp/xinguos-teste.out
+[ "$rc" -eq 1 ] && grep -q '^FALHA' /tmp/xinguos-teste.out && ls /tmp/xinguos-teste-*.txt >/dev/null
 echo "smoke-repo: ok"

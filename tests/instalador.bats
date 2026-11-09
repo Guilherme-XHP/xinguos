@@ -13,6 +13,8 @@ setup() {
            /etc/systemd/system/multi-user.target.wants/xinguos-live-usuario.service \
            /etc/systemd/system/xinguos-protege-midia.service \
            /etc/systemd/system/multi-user.target.wants/xinguos-protege-midia.service \
+           /etc/systemd/system/xinguos-live-chaveiro.service \
+           /etc/systemd/system/multi-user.target.wants/xinguos-live-chaveiro.service \
            /usr/local/bin/xinguos-live-usuario /usr/local/bin/xinguos-protege-midia \
            /etc/skel/Desktop/instalar-xinguos.desktop /usr/share/applications/instalar-xinguos.desktop \
            /etc/mkinitcpio.conf.d/archiso.conf /etc/calamares/settings.conf \
@@ -49,6 +51,8 @@ teardown() { rm -rf "$RAIZ" "$LOG"; }
   [ "$status" -eq 0 ]
   for f in /etc/sddm.conf.d/10-xinguos-live.conf /etc/sudoers.d/10-xinguos-live \
            /etc/systemd/system/xinguos-live-usuario.service /etc/systemd/system/xinguos-protege-midia.service \
+           /etc/systemd/system/xinguos-live-chaveiro.service \
+           /etc/systemd/system/multi-user.target.wants/xinguos-live-chaveiro.service \
            /usr/local/bin/xinguos-protege-midia /etc/skel/Desktop/instalar-xinguos.desktop \
            /etc/mkinitcpio.conf.d/archiso.conf /etc/calamares /usr/lib/xinguos/instalador; do
     [ ! -e "$RAIZ$f" ] || { echo "sobrou $f"; false; }
@@ -146,4 +150,13 @@ teardown() { rm -rf "$RAIZ" "$LOG"; }
   : > "$LOG"
   PERFIL=amd run bash "$POS" --raiz "$RAIZ"
   [ "$(grep -n 'pacman-key --populate' "$LOG" | cut -d: -f1)" -lt "$(grep -n '^pacman -Sy' "$LOG" | cut -d: -f1)" ]
+}
+
+@test "live: chaveiro do pacman criado no boot (pacman -S funciona no live)" {
+  local s=iso/instalar/airootfs/etc/systemd/system/xinguos-live-chaveiro.service
+  grep -qx 'ExecStart=/usr/bin/pacman-key --init' "$s"
+  grep -qx 'ExecStart=/usr/bin/pacman-key --populate archlinux xinguos' "$s"
+  grep -qx 'WantedBy=multi-user.target' "$s"
+  grep -qx 'Before=archlinux-keyring-wkd-sync.service' "$s" || grep -qx 'Type=oneshot' "$s"
+  cmp -s "$s" iso/teste/airootfs/etc/systemd/system/xinguos-live-chaveiro.service
 }

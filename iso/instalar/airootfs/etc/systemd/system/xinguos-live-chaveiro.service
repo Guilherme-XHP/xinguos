@@ -1,0 +1,14 @@
+[Unit]
+Description=XInguOS ao vivo: chaveiro do pacman (Arch + XInguOS), para o pacman -S funcionar no live
+# o mkarchiso não cria /etc/pacman.d/gnupg; o perfil releng do archiso faz o mesmo no pacman-init
+Before=archlinux-keyring-wkd-sync.service
+ConditionPathExists=!/etc/pacman.d/gnupg/trustdb.gpg
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/pacman-key --init
+ExecStart=/usr/bin/pacman-key --populate archlinux xinguos
+
+[Install]
+WantedBy=multi-user.target

@@ -28,6 +28,8 @@ for f in \
   /etc/systemd/system/multi-user.target.wants/xinguos-live-usuario.service \
   /etc/systemd/system/xinguos-protege-midia.service \
   /etc/systemd/system/multi-user.target.wants/xinguos-protege-midia.service \
+  /etc/systemd/system/xinguos-live-chaveiro.service \
+  /etc/systemd/system/multi-user.target.wants/xinguos-live-chaveiro.service \
   /usr/local/bin/xinguos-live-usuario \
   /usr/local/bin/xinguos-protege-midia \
   /etc/skel/Desktop/instalar-xinguos.desktop \

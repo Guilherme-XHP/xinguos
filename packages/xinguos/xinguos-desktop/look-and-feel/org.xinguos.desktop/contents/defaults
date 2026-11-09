@@ -2,14 +2,14 @@
 widgetStyle=Breeze
 
 [kdeglobals][General]
-ColorScheme=BreezeLight
+ColorScheme=XInguOSEscuro
 
 [kdeglobals][Icons]
-Theme=breeze
+Theme=Tela-XInguOS-dark
 
 [plasmarc][Theme]
-name=default
+name=Materia-Color
 
 [kwinrc][org.kde.kdecoration2]
-library=org.kde.breeze
-theme=Breeze
+library=org.kde.kwin.aurorae
+theme=__aurorae__svg__Materia-Dark

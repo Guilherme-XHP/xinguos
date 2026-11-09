@@ -1,0 +1,184 @@
+#!/usr/bin/env bash
+# xinguos-teste — confere o XInguOS de uma vez e grava um log para mandar ao Claude.
+#
+#   xinguos-teste          confere o que dá sem root
+#   sudo xinguos-teste     confere também o chaveiro e os repositórios do pacman
+#
+# Mostra OK / AVISO / FALHA para cada item e grava ~/xinguos-teste-<data>.txt com o
+# resultado e os logs (SDDM, sessão Gaming, Steam, journal). Sai com 1 se algo falhou.
+# Funciona no live e no sistema instalado. Nunca muda nada no sistema, a não ser o
+# "pacman -Sy" (só com sudo), que só atualiza a lista de pacotes.
+#
+# ambiente (testes): XINGUOS_RAIZ — prefixo dos arquivos conferidos
+set -uo pipefail
+
+R=${XINGUOS_RAIZ:-}
+
+# quem rodou: com sudo, o log vai para a pasta do usuário de verdade
+usuario=$(id -un 2>/dev/null || echo "?")
+casa=$HOME
+if [ "$(id -u 2>/dev/null)" = 0 ] && [ -n "${SUDO_USER:-}" ]; then
+  usuario=$SUDO_USER
+  casa=$(getent passwd "$SUDO_USER" | cut -d: -f6)
+fi
+root=false
+[ "$(id -u 2>/dev/null)" = 0 ] && [ -z "$R" ] && root=true
+
+printf -v quando '%(%Y%m%d-%H%M%S)T' -1
+saida="$casa/xinguos-teste-$quando.txt"
+resultado=$(mktemp)
+oks=0 avisos=0 falhas=0
+
+ok()    { oks=$((oks + 1));       printf 'OK     %s\n' "$1" | tee -a "$resultado"; }
+aviso() { avisos=$((avisos + 1)); printf 'AVISO  %s\n' "$1" | tee -a "$resultado"; [ -z "${2:-}" ] || printf '       → %s\n' "$2" | tee -a "$resultado"; }
+falha() { falhas=$((falhas + 1)); printf 'FALHA  %s\n' "$1" | tee -a "$resultado"; [ -z "${2:-}" ] || printf '       → %s\n' "$2" | tee -a "$resultado"; }
+tem() { command -v "$1" >/dev/null 2>&1; }
+existe() { [ -e "$R$1" ]; }
+
+echo "xinguos-teste — $quando (usuário: $usuario)"
+echo
+
+# 1. sistema
+if grep -qx 'ID=xinguos' "$R/etc/os-release" 2>/dev/null; then
+  ok "sistema é o XInguOS"
+else
+  falha "sistema não se identifica como XInguOS (/etc/os-release)" "pacote xinguos-branding instalado?"
+fi
+live=false
+if [ -d "$R/run/archiso" ]; then
+  live=true
+  if [ -s "$R/run/xinguos/midia-protegida" ]; then
+    ok "live: HD do Ventoy protegido (somente leitura)"
+  else
+    falha "live: HD do Ventoy NÃO está protegido" "não instale nada; mande este log"
+  fi
+fi
+
+# 2. pacman: chaveiro e repositórios (precisam de root)
+if $root; then
+  id_chave=$(cut -d: -f1 "$R/usr/share/pacman/keyrings/xinguos-trusted" 2>/dev/null | head -1)
+  if [ -n "$id_chave" ] && pacman-key --list-keys "$id_chave" >/dev/null 2>&1; then
+    ok "chaveiro do pacman tem a chave do XInguOS"
+  else
+    falha "chaveiro do pacman sem a chave do XInguOS" "sudo pacman-key --init && sudo pacman-key --populate archlinux xinguos"
+  fi
+  if timeout 180 pacman -Sy >/dev/null 2>&1; then
+    ok "repositórios do pacman (Arch + XInguOS) sincronizam"
+  else
+    falha "pacman -Sy falhou" "veja a seção 'pacman' do log"
+  fi
+else
+  aviso "chaveiro e repositórios não conferidos" "rode com sudo: sudo xinguos-teste"
+fi
+
+# 3. vídeo
+gpu=$(lspci 2>/dev/null | grep -iE 'vga|3d controller' | head -1)
+if [ -n "$gpu" ]; then
+  ok "placa de vídeo: ${gpu#*: }"
+  if grep -qi nvidia <<<"$gpu"; then
+    if [ "$(cat /sys/module/nvidia_drm/parameters/modeset 2>/dev/null)" = Y ]; then
+      ok "NVIDIA: driver carregado com modeset (Wayland ok)"
+    else
+      falha "NVIDIA: driver sem modeset ou não carregado" "lsmod | grep nvidia; veja a seção 'placa de vídeo'"
+    fi
+  fi
+else
+  aviso "não consegui ver a placa de vídeo (lspci)"
+fi
+
+# 4. Gaming Mode
+if existe /usr/share/wayland-sessions/xinguos-gaming.desktop && existe /usr/lib/xinguos/xinguos-gaming-sessao; then
+  ok "sessão XInguOS Gaming instalada"
+else
+  falha "sessão XInguOS Gaming não instalada" "pacote xinguos-gaming"
+fi
+if existe /usr/share/wayland-sessions/plasma.desktop; then ok "sessão Plasma instalada"; else falha "sessão Plasma não instalada"; fi
+modo=$(xinguos-session-select --status 2>/dev/null | sed -n 's/^modo=//p')
+if [ -n "$modo" ]; then
+  ok "modo do Gaming: $modo"
+  for c in steam kwin_wayland; do tem "$c" || falha "Gaming: falta o comando $c"; done
+  [ "$modo" != completo ] || tem gamescope || falha "Gaming completo sem o gamescope"
+fi
+if existe /usr/share/polkit-1/rules.d/49-xinguos-sessao.rules; then
+  if [ -z "$R" ] && ! id -nG "$usuario" 2>/dev/null | tr ' ' '\n' | grep -qx wheel; then
+    falha "usuário $usuario fora do grupo wheel: a troca de sessão vai pedir senha"
+  else
+    ok "troca de sessão sem senha (polkit)"
+  fi
+else
+  falha "regra do polkit da troca de sessão não instalada"
+fi
+
+# 5. Foco
+if [ -z "$R" ] && tem systemctl; then
+  if [ "$usuario" = "$(id -un)" ]; then
+    estado=$(systemctl --user is-active xinguos-foco 2>/dev/null)
+  else
+    estado=$(systemctl --user -M "$usuario@" is-active xinguos-foco 2>/dev/null)
+  fi
+  if [ "$estado" = active ]; then
+    ok "Foco rodando"
+  else
+    aviso "Foco não está rodando (${estado:-?})" "systemctl --user status xinguos-foco"
+  fi
+fi
+
+# 6. tema
+if existe /usr/share/icons/Tela-XInguOS-dark/index.theme && existe /usr/share/color-schemes/XInguOSEscuro.colors \
+   && existe /usr/share/plasma/desktoptheme/Materia-Color/metadata.desktop; then
+  ok "tema escuro (Materia + ícones Tela + XInguOS Escuro) instalado"
+else
+  falha "tema escuro incompleto" "pacote xinguos-tema"
+fi
+
+# 7. serviços com falha
+if [ -z "$R" ] && tem systemctl; then
+  falhos=$(systemctl --failed --no-legend --plain 2>/dev/null | awk '{print $1}' | xargs)
+  if [ -z "$falhos" ]; then
+    ok "nenhum serviço com falha"
+  else
+    falha "serviços com falha: $falhos" "veja a seção 'journal'"
+  fi
+fi
+
+# --- log completo ---
+secao() { printf '\n== %s\n' "$1"; }
+rodar() { if tem "$1"; then timeout 30 "$@" 2>&1 | tail -n 300; else echo "($1 não encontrado)"; fi; }
+mostrar() { if [ -r "$R$1" ]; then echo "-- $1"; tail -n "${2:-200}" "$R$1"; else echo "($1 não existe)"; fi; }
+{
+  echo "xinguos-teste — $quando (usuário: $usuario, root: $root, live: $live)"
+  secao "resumo"
+  echo "$oks OK, $avisos aviso(s), $falhas falha(s)"
+  cat "$resultado"
+  secao "sistema"
+  mostrar /etc/os-release 20
+  rodar uname -a
+  rodar xinguos-session-select --status
+  for f in "$R"/etc/xinguos/*.conf; do [ -e "$f" ] && mostrar "${f#"$R"}" 20; done
+  secao "placa de vídeo"
+  if tem lspci; then lspci -k 2>/dev/null | grep -A3 -iE 'vga|3d|display'; else echo "(lspci não encontrado)"; fi
+  rodar cat /proc/cmdline
+  secao "sessão do SDDM"
+  for f in "$R"/etc/sddm.conf.d/*.conf; do [ -e "$f" ] && mostrar "${f#"$R"}" 30; done
+  rodar loginctl list-sessions --no-pager
+  secao "sessão Gaming"
+  mostrar "${casa#"$R"}/.local/state/xinguos/gaming-sessao.log" 100
+  mostrar "${casa#"$R"}/.local/state/xinguos/gaming-falhas" 5
+  mostrar "${casa#"$R"}/.local/share/sddm/wayland-session.log" 300
+  secao "Steam"
+  mostrar "${casa#"$R"}/.local/share/Steam/logs/console-linux.txt" 150
+  mostrar "${casa#"$R"}/.local/share/Steam/logs/bootstrap_log.txt" 80
+  secao "pacman"
+  rodar pacman -Q xinguos xinguos-base xinguos-desktop xinguos-gaming xinguos-tema
+  secao "journal: SDDM"
+  rodar journalctl -b -u sddm --no-pager
+  secao "journal: erros (sem o spam de Modeset)"
+  if tem journalctl; then journalctl -b -p err --no-pager 2>&1 | grep -v 'Modeset failed' | tail -n 150; else echo "(journalctl não encontrado)"; fi
+} > "$saida" 2>&1
+rm -f "$resultado"
+if [ "$(id -u 2>/dev/null)" = 0 ] && [ -n "${SUDO_USER:-}" ]; then chown "$SUDO_USER": "$saida" 2>/dev/null || true; fi
+
+echo
+echo "$oks OK, $avisos aviso(s), $falhas falha(s)"
+echo "log salvo em: $saida  (é só mandar esse arquivo)"
+[ "$falhas" -eq 0 ]

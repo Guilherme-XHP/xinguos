@@ -32,6 +32,9 @@ done
 
 # 2. tema do XInguOS no nível do usuário
 k --file kdeglobals --group KDE --key LookAndFeelPackage org.xinguos.desktop
+# decoração das janelas Materia-Dark (o /etc/xdg/kwinrc é do xinguos-foco, então vai aqui)
+k --file kwinrc --group org.kde.kdecoration2 --key library org.kde.kwin.aurorae
+k --file kwinrc --group org.kde.kdecoration2 --key theme __aurorae__svg__Materia-Dark
 
 # 3. atalhos estilo Windows (spec 6.3)
 atalho kwin -- "Window Maximize" "Meta+Up,Meta+PgUp,Maximizar janela"
