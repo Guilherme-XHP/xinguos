@@ -75,3 +75,9 @@ setup_file() {
   [ "$status" -eq 0 ]
   [[ "$output" == *'geo.mirror.pkgbuild.com/$repo/os/$arch'* ]]
 }
+
+@test "ISO leva xinguos-desktop, mas não xinguos-apps (pesado demais)" {
+  grep -qx xinguos-desktop "$PERFIL/packages.x86_64"
+  run grep -x xinguos-apps "$PERFIL/packages.x86_64"
+  [ "$status" -ne 0 ]
+}

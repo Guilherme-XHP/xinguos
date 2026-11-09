@@ -1,0 +1,5 @@
+# XInguOS: padrões do sistema (o que o usuário mudar em ~/.config/kdeglobals ganha)
+[KDE]
+LookAndFeelPackage=org.xinguos.desktop
+AnimationDurationFactor=0.5
+SingleClick=false

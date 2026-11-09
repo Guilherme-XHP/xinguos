@@ -7,3 +7,6 @@ xinguos/xinguos-hwdetect
 aur/paru-bin
 xinguos/xinguos-kernels
 xinguos/xinguos-base
+xinguos/kwin-scripts-krohnkite
+xinguos/xinguos-desktop
+xinguos/xinguos-apps

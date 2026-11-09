@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# stub do archlinux-java: "get" imprime $AJ_GET; "set X" registra em $AJ_LOG
+case "${1:-}" in
+  get) echo "${AJ_GET:-}" ;;
+  set) echo "set $2" >> "$AJ_LOG" ;;
+esac

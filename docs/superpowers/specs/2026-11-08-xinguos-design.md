@@ -273,6 +273,33 @@ No modo "só os programas", num Arch puro, ele é aberto à mão.
 
 O Gaming Mode não entra no Bem-Estar, porque o Steam já registra as horas de jogo.
 
+#### 7.2.1 Decisões delegadas (2026-11-09)
+
+O Xingu delegou o design do painel ("deixar você fazendo o rolê todo"). Estas escolhas valem até ele revisar:
+
+- **Painel "Foco"** (PySide6 + QML, abre pelo launcher como "Foco: tempo de uso e prioridades"):
+  - **sem ícone na bandeja**: o painel só existe quando está aberto, então não gasta RAM parado;
+  - três abas:
+    1. **Hoje:** tempo total de tela e uma barra horizontal por app (ícone + nome do `.desktop` + tempo), do maior para o menor;
+    2. **Semana:** uma coluna por dia com o total, e ao clicar no dia aparecem os apps dele;
+    3. **Prioridades e limites:** lista dos apps já vistos, cada um com um seletor `Sempre prioridade / Normal / Segundo plano` e um campo opcional "limite diário (min)". Salva direto no `foco.toml`, e o daemon recarrega sozinho.
+- **Identificação do app:** o `desktopFileName` da janela, que o KWin informa. Se vier vazio, usa o `resourceClass`. Nome e ícone saem do `.desktop`.
+- **Dados:** SQLite com uma tabela de intervalos (`app`, `inicio`, `fim`, em segundos Unix), guardados por **90 dias**.
+- **Ociosidade:** o daemon consulta `org.freedesktop.ScreenSaver.GetSessionIdleTime` a cada 30 s. Com mais de 120 s parado, fecha o intervalo atual.
+- **Avisos:** limite diário e a pergunta do autotile (6.4) usam `org.freedesktop.Notifications`, com botões de ação. Quem faz é o próprio daemon, sem Python.
+- **Prioridade:** como na 7.2, via `CPUWeight`/`IOWeight` no `app-*.scope` do app em foco. Jogos lançados pelo Steam herdam o scope do Steam, então o Steam inteiro ganha peso enquanto o jogo está em foco.
+- **Ficam para depois (YAGNI):** widget na barra mostrando o app em foco; bloquear o app quando o limite estoura (o spec diz que só avisa); exportar dados.
+- **Daemon em Python, não em Rust** (muda a 7.2):
+  - Binário compilado muda de bytes quando a toolchain do Arch atualiza, e a trava de conteúdo do repositório (Plano 2) passaria a falhar o CI sem mudança real.
+  - Não há Rust na máquina do Xingu para gerar o `Cargo.lock`.
+  - Python (`asyncio` + `python-dbus-fast` + `sqlite3` + `tomllib`) é reprodutível e testável com pytest.
+  - Custo: ~25 MB de RAM em vez de ~3 MB.
+- **Sem a pergunta "Organizar X em mosaico?"** (muda a 6.4):
+  - O KWin e o Krohnkite não informam se o autotile está ligado, então o daemon não teria como perguntar só nessa hora.
+  - No lugar dela, a aba "Prioridades e limites" ganha uma coluna **Autotile (sim/não)** por app. "Não" acrescenta o app ao `ignoreClass` do Krohnkite, e vale a partir do próximo login.
+  - O estado do Win+T **não** sobrevive ao reiniciar: o Krohnkite volta para o layout flutuante.
+- **I/O por usuário:** o `xinguos-base` passa a delegar o controlador `io` para o `user@.service` (`Delegate=cpu cpuset io memory pids`). Sem isso, o `IOWeight` nos apps do usuário é ignorado.
+
 ## 8. Apps
 
 ### 8.1 Dentro da ISO (`xinguos-apps`, repos oficiais + `[xinguos]`)

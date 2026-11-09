@@ -1,0 +1,17 @@
+pkgname=xinguos-apps
+pkgver=0.1.0
+pkgrel=2
+pkgdesc="Apps do dia a dia do XInguOS (spec 8.1): navegador, mídia, 3D, dev, escritório e utilitários"
+arch=(any)
+url="https://github.com/Guilherme-XHP/xinguos"
+license=(GPL-3.0-or-later)
+depends=(
+  firefox firefox-i18n-pt-br telegram-desktop
+  vlc kdenlive obs-studio audacity gimp blender
+  godot code git android-tools python nodejs npm jdk17-openjdk jdk21-openjdk
+  base-devel gcc gdb cmake clang
+  libreoffice-fresh libreoffice-fresh-pt-br
+  qbittorrent 7zip bitwarden obsidian
+)
+optdepends=('photogimp: GIMP com cara e atalhos do Photoshop')
+install=xinguos-apps.install
