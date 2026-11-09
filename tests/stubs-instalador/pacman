@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# stub do pacman no teste do instalador: -Qq <p> responde por $INSTALADOS
+echo "pacman $*" >> "$LOG"
+case "${1:-}" in
+  -Qq) case " $INSTALADOS " in *" $2 "*) exit 0 ;; *) exit 1 ;; esac ;;
+  -Sy) exit "${PACMAN_SY_STATUS:-0}" ;;
+  *) exit 0 ;;
+esac

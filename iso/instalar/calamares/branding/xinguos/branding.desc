@@ -1,0 +1,34 @@
+---
+componentName: xinguos
+welcomeStyleCalamares: false
+welcomeExpandingLogo: true
+windowExpanding: normal
+windowSize: 1024px,640px
+windowPlacement: center
+sidebar: widget
+navigation: widget
+
+strings:
+  productName: "XInguOS"
+  shortProductName: "XInguOS"
+  version: "rolling"
+  shortVersion: "rolling"
+  versionedName: "XInguOS"
+  shortVersionedName: "XInguOS"
+  bootloaderEntryName: "XInguOS"
+  productUrl: "https://github.com/Guilherme-XHP/xinguos"
+  supportUrl: "https://github.com/Guilherme-XHP/xinguos/issues"
+
+images:
+  productLogo: "logo.svg"
+  productIcon: "logo.svg"
+  productWelcome: "logo.svg"
+
+slideshow: "show.qml"
+slideshowAPI: 2
+
+style:
+  SidebarBackground: "#0b1320"
+  SidebarText: "#e6f7f5"
+  SidebarTextCurrent: "#0b1320"
+  SidebarBackgroundCurrent: "#2ec4b6"
