@@ -32,3 +32,19 @@ Depois disso, instale o que quiser. Por exemplo, o driver da GTX 10xx:
 ```bash
 sudo pacman -S nvidia-580xx-dkms nvidia-580xx-utils lib32-nvidia-580xx-utils
 ```
+
+## Desenvolver o XInguOS de dentro do XInguOS
+
+```bash
+sudo pacman -S --needed git github-cli base-devel bats shellcheck namcap python-pytest python-yaml
+git clone https://github.com/Guilherme-XHP/xinguos.git && cd xinguos
+gh auth login
+bats tests/                 # os testes rodam direto (aqui é Linux de verdade)
+```
+
+O ciclo de uma versão nova:
+
+1. mudar o pacote e subir o `pkgrel` (pacote publicado nunca muda com o mesmo nome);
+2. `git push` na `main`: o CI compila, assina e publica no `[xinguos]`;
+3. `sudo pacman -Syu` no próprio PC já pega a versão nova;
+4. ISO nova, quando precisar: `tools/gerar-iso.sh [branch] [pasta]` (o CI gera, o script baixa e confere).
