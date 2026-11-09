@@ -1,0 +1,14 @@
+# XInguOS Foco — padrão do sistema. O ~/.config/xinguos/foco.toml do usuário
+# substitui cada seção ([prioridades], [limites], [autotile]) inteira.
+[prioridades]
+# ganham CPU e disco na frente (peso 1000), mesmo fora de foco
+sempre = []
+# ficam atrás de tudo (peso 25), mesmo em foco
+segundo_plano = ["org.qbittorrent.qBittorrent"]
+
+[limites]
+# "<app>" = minutos por dia; avisa uma vez quando passar
+
+[autotile]
+# apps que o autotile (Win+T) nunca organiza
+nao = []
