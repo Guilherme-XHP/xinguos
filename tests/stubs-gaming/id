@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# stub do id: o usuário do teste é xingu (1000); "outro" é 1001
+case "$*" in
+  -un) echo xingu ;;
+  -u) echo 1000 ;;
+  "-u xingu") echo 1000 ;;
+  "-u outro") echo 1001 ;;
+  *) exit 1 ;;
+esac
