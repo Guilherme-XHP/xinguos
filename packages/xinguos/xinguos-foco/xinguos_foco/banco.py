@@ -29,26 +29,65 @@ def _limites_do_dia(dia: date) -> tuple[float, float]:
     return comeco, fim
 
 
+# só estes erros querem dizer "arquivo estragado"; travado, sem permissão ou erro de disco não
+_CORROMPIDO = {"SQLITE_NOTADB", "SQLITE_CORRUPT"}
+
+
+def _corrompido(e: sqlite3.DatabaseError) -> bool:
+    nome = getattr(e, "sqlite_errorname", "") or ""
+    if nome:
+        return nome in _CORROMPIDO
+    texto = str(e).lower()
+    return "not a database" in texto or "malformed" in texto
+
+
 class Banco:
-    def __init__(self, caminho: Path, agora: Callable[[], float] = time.time):
+    """Intervalos de uso. O daemon abre para escrever; o painel abre só para ler
+    (somente_leitura=True: nunca cria, nunca renomeia; banco ausente ou ruim = vazio)."""
+
+    def __init__(self, caminho: Path, agora: Callable[[], float] = time.time, somente_leitura: bool = False):
         self.caminho = Path(caminho)
         self.agora = agora
+        if somente_leitura:
+            self.con = self._abrir_leitura()
+            return
         self.caminho.parent.mkdir(parents=True, exist_ok=True)
         try:
             self.con = self._abrir()
         except sqlite3.DatabaseError as e:
+            if not _corrompido(e):
+                raise
             carimbo = datetime.fromtimestamp(self.agora()).strftime("%Y%m%d-%H%M%S")
             destino = self.caminho.with_name(f"{self.caminho.name}.corrompido-{carimbo}")
             log.warning("banco %s corrompido (%s): renomeado para %s", self.caminho, e, destino.name)
-            os.replace(self.caminho, destino)
-            for extra in ("-wal", "-shm", "-journal"):
-                resto = self.caminho.with_name(self.caminho.name + extra)
-                if resto.exists():
-                    resto.unlink()
-            self.con = self._abrir()
+            try:
+                os.replace(self.caminho, destino)
+                for extra in ("-wal", "-shm", "-journal"):
+                    resto = self.caminho.with_name(self.caminho.name + extra)
+                    if resto.exists():
+                        resto.unlink()
+                self.con = self._abrir()
+            except (OSError, sqlite3.DatabaseError) as e2:
+                log.error("não consegui trocar o banco corrompido (%s): seguindo só na memória", e2)
+                self.con = sqlite3.connect(":memory:")
+                self.con.executescript(_ESQUEMA)
+
+    def _abrir_leitura(self) -> sqlite3.Connection:
+        con = None
+        try:
+            con = sqlite3.connect(f"{self.caminho.resolve().as_uri()}?mode=ro", uri=True)
+            con.execute("SELECT count(*) FROM intervalos").fetchone()
+            return con
+        except sqlite3.DatabaseError as e:
+            if con is not None:
+                con.close()
+            log.info("banco %s indisponível para leitura (%s): mostrando vazio", self.caminho, e)
+            con = sqlite3.connect(":memory:")
+            con.executescript(_ESQUEMA)
+            return con
 
     def _abrir(self) -> sqlite3.Connection:
-        con = sqlite3.connect(self.caminho)
+        con = sqlite3.connect(self.caminho, timeout=10)
         try:
             con.executescript(_ESQUEMA)
             con.execute("SELECT count(*) FROM intervalos").fetchone()
@@ -56,6 +95,13 @@ class Banco:
             con.close()
             raise
         return con
+
+    def cortar(self, app: str, desde: float) -> None:
+        """Desfaz o que já foi gravado de `app` depois de `desde` (o usuário estava parado)."""
+        with self.con:
+            self.con.execute("UPDATE intervalos SET fim = MAX(inicio, :d) WHERE app = :a AND fim > :d",
+                             {"a": app, "d": desde})
+            self.con.execute("DELETE FROM intervalos WHERE app = :a AND fim <= inicio", {"a": app})
 
     def registrar(self, app: str, inicio: float, fim: float) -> None:
         if not app or fim <= inicio:

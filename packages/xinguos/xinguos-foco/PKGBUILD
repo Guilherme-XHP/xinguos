@@ -1,6 +1,6 @@
 pkgname=xinguos-foco
 pkgver=0.1.0
-pkgrel=2
+pkgrel=3
 pkgdesc="Foco do XInguOS: prioridade de CPU/disco para o app em foco e tempo de uso (Bem-Estar)"
 arch=(any)
 url="https://github.com/Guilherme-XHP/xinguos"
@@ -18,7 +18,6 @@ package() {
     install -m644 "$m"/*.py "$lib/$m/"
   done
   install -m644 xinguos_foco_painel/Main.qml "$lib/xinguos_foco_painel/Main.qml"
-  python -m compileall -q -d /usr/lib/xinguos/foco "$lib"
   install -Dm755 xinguos-foco "$pkgdir/usr/bin/xinguos-foco"
   install -Dm755 xinguos-foco-painel "$pkgdir/usr/bin/xinguos-foco-painel"
   install -Dm644 kwin/xinguos-foco/metadata.json "$pkgdir/usr/share/kwin/scripts/xinguos-foco/metadata.json"

@@ -43,3 +43,8 @@ F=packages/xinguos/xinguos-foco
   [ "$status" -eq 0 ]
   grep -qx "Exec=xinguos-foco-painel" "$F/org.xinguos.foco.desktop"
 }
+
+@test "pacote não gera .pyc (bytes mudariam a cada versão do Python e quebrariam a trava de conteúdo)" {
+  run grep -n compileall "$F/PKGBUILD"
+  [ "$status" -ne 0 ]
+}

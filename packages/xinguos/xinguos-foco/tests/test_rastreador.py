@@ -11,6 +11,10 @@ class BancoFalso:
         if app and fim > inicio:
             self.intervalos.append((app, inicio, fim))
 
+    def cortar(self, app, desde):
+        cortados = [(a, i, min(f, desde) if a == app else f) for a, i, f in self.intervalos]
+        self.intervalos = [(a, i, f) for a, i, f in cortados if f > i]
+
 
 def test_foco_no_mesmo_app_nao_duplica_intervalo():
     b = BancoFalso()
@@ -88,3 +92,16 @@ def test_checkpoint_pausado_nao_grava():
     r.ocioso(120, 200)
     r.checkpoint(250)
     assert b.intervalos == [("firefox", 0, 80)]
+
+
+def test_ocioso_depois_de_checkpoint_recua_o_que_ja_foi_gravado(tmp_path):
+    from xinguos_foco.banco import Banco
+    b = Banco(tmp_path / "f.db")
+    base = datetime(2026, 11, 9, 10).timestamp()
+    r = Rastreador(b)
+    r.foco("firefox", base)
+    for t in (30, 60, 90, 120, 150, 180, 210):   # ticks de 30 s; parou em base+100
+        r.checkpoint(base + t)
+    r.ocioso(120, base + 220)
+    r.checkpoint(base + 250)
+    assert b.totais_do_dia(date(2026, 11, 9)) == [("firefox", 100)]

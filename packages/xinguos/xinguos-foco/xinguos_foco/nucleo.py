@@ -13,7 +13,7 @@ from .banco import Banco
 from .config import carregar, peso
 from .limites import limites_estourados
 from .prioridade import Aplicador, scope_do_pid
-from .rastreador import Rastreador
+from .rastreador import LIMITE_OCIOSO, Rastreador
 
 log = logging.getLogger(__name__)
 
@@ -30,6 +30,7 @@ class Nucleo:
         self.atual: tuple[str, str | None] | None = None
         self.avisados: tuple[date, set[str]] = (self._hoje(), set())
         self.ultima_purga: date | None = None
+        self.ultimo_tick: float | None = None
         self._carregar_config()
 
     def _hoje(self) -> date:
@@ -80,6 +81,11 @@ class Nucleo:
 
     def tick(self, ocioso_seg: float, avisar: Callable[[str, str, int, int], None]) -> None:
         agora = self.agora()
+        if self.ultimo_tick is not None and agora - self.ultimo_tick >= LIMITE_OCIOSO:
+            # o laço ficou parado (PC suspenso ou hibernado): o tempo sem tick não é uso
+            log.info("sem tick por %.0f s (suspensão?): não conta como uso", agora - self.ultimo_tick)
+            self.rastreador.ocioso(agora - self.ultimo_tick, agora)
+        self.ultimo_tick = agora
         self.rastreador.ocioso(ocioso_seg, agora)
         self.rastreador.checkpoint(agora)
         if self._mtimes() != self.mtimes:

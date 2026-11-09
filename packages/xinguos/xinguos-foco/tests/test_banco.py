@@ -62,3 +62,34 @@ def test_apps_registrados(tmp_path):
     b.registrar("b", t, t + 1)
     b.registrar("a", t, t + 1)
     assert b.apps() == ["a", "b"]
+
+
+def test_banco_travado_nao_e_renomeado(tmp_path, monkeypatch):
+    import sqlite3
+
+    import pytest
+    db = tmp_path / "foco.db"
+    b0 = Banco(db)
+    b0.registrar("x", 1, 2)
+    b0.fechar()
+    real = sqlite3.connect
+
+    def travado(*a, **k):
+        raise sqlite3.OperationalError("database is locked")
+    monkeypatch.setattr(sqlite3, "connect", travado)
+    with pytest.raises(sqlite3.OperationalError):
+        Banco(db)
+    monkeypatch.setattr(sqlite3, "connect", real)
+    assert db.exists() and not list(tmp_path.glob("*.corrompido-*"))
+
+
+def test_somente_leitura_nao_cria_nem_renomeia(tmp_path):
+    db = tmp_path / "foco.db"
+    b = Banco(db, somente_leitura=True)
+    assert b.totais_do_dia(date(2026, 11, 9)) == [] and not db.exists()
+    db.write_bytes(b"lixo " * 300)
+    b = Banco(db, somente_leitura=True)
+    assert b.apps() == [] and not list(tmp_path.glob("*.corrompido-*"))
+    db.unlink()
+    Banco(db).registrar("firefox", ts("2026-11-09 10:00:00"), ts("2026-11-09 10:01:00"))
+    assert Banco(db, somente_leitura=True).totais_do_dia(date(2026, 11, 9)) == [("firefox", 60)]

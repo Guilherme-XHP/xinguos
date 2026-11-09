@@ -75,3 +75,16 @@ def test_recarregar_reaplica_pesos(tmp_path):
     n.usuario.write_text('[prioridades]\nsegundo_plano = ["qbit"]\n', encoding="utf-8")
     n.recarregar()
     assert ch == [("app-qbit@3.scope", "CPUWeight=25")]
+
+
+def test_suspensao_nao_conta_como_uso(tmp_path):
+    n, ch, t = montar(tmp_path)
+    nada = lambda *a: None  # noqa: E731
+    n.foco("firefox", "", "20")
+    t[0] += 30
+    n.tick(0, avisar=nada)
+    t[0] += 8 * 3600       # PC suspenso: nenhum tick por 8 h, ociosidade volta zerada
+    n.tick(0, avisar=nada)
+    t[0] += 30
+    n.tick(0, avisar=nada)
+    assert json.loads(n.totais_json()) == [{"app": "firefox", "segundos": 60}]

@@ -28,7 +28,11 @@ class Rastreador:
     def ocioso(self, segundos: float, agora: float) -> None:
         if segundos >= self.limite:
             if not self.pausado:
-                self._fechar(agora - segundos)
+                parou = agora - segundos
+                if self.app and self.inicio is not None and parou < self.inicio:
+                    # o checkpoint já gravou tempo parado: desfaz até a hora em que parou
+                    self.banco.cortar(self.app, parou)
+                self._fechar(parou)
                 self.pausado = True
         elif self.pausado:
             self.pausado = False

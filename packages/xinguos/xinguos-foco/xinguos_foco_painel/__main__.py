@@ -69,7 +69,7 @@ def montar(db=None, sistema=None, usuario=None):
     app.setDesktopFileName("org.xinguos.foco")
     app.setWindowIcon(QIcon.fromTheme("preferences-system-time"))
     sis_padrao, usu_padrao = caminhos_padrao()
-    backend = Backend(Banco(db or caminho_padrao()), Path(sistema or sis_padrao), Path(usuario or usu_padrao))
+    backend = Backend(Banco(db or caminho_padrao(), somente_leitura=True), Path(sistema or sis_padrao), Path(usuario or usu_padrao))
     engine = QQmlApplicationEngine()
     avisos: list[str] = []
     engine.warnings.connect(lambda lista: avisos.extend(w.toString() for w in lista))
