@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# stub do kwriteconfig6 para os testes: registra cada chamada em $KWRITE_LOG
+echo "$*" >> "${KWRITE_LOG:-/dev/null}"
+exit "${KWRITE_STATUS:-0}"
