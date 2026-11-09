@@ -104,3 +104,12 @@ def test_qml_carrega(tmp_path):
     app, engine, avisos = montar(db=tmp_path / "f.db", sistema=tmp_path / "s.toml", usuario=tmp_path / "u.toml")
     assert engine.rootObjects(), avisos
     assert avisos == []
+
+
+def test_semana_traz_a_data_para_abrir_o_dia(tmp_path):
+    b = Banco(tmp_path / "f.db")
+    b.registrar("steam", ts("2026-11-08 10:00:00"), ts("2026-11-08 10:30:00"))
+    s = dados.resumo_semana(b, date(2026, 11, 9))
+    assert s[-2]["data"] == "2026-11-08"
+    assert [a["app"] for a in dados.resumo_dia(b, s[-2]["data"], dirs=[])] == ["steam"]
+    assert dados.resumo_dia(b, "lixo", dirs=[]) == []

@@ -39,8 +39,18 @@ def resumo_hoje(banco: Banco, hoje: date, dirs: list[Path] | None = None) -> lis
 
 
 def resumo_semana(banco: Banco, hoje: date) -> list[dict]:
-    return [{"dia": f"{DIAS[dia.weekday()]} {dia:%d/%m}", "segundos": s, "texto": texto_tempo(s)}
+    return [{"dia": f"{DIAS[dia.weekday()]} {dia:%d/%m}", "data": dia.isoformat(), "segundos": s,
+             "texto": texto_tempo(s)}
             for dia, s in banco.totais_por_dia(hoje, 7).items()]
+
+
+def resumo_dia(banco: Banco, data_iso: str, dirs: list[Path] | None = None) -> list[dict]:
+    """Apps de um dia da aba Semana (data "AAAA-MM-DD")."""
+    try:
+        dia = date.fromisoformat(data_iso)
+    except (TypeError, ValueError):
+        return []
+    return resumo_hoje(banco, dia, dirs)
 
 
 def _prioridade(app: str, cfg: Config) -> str:

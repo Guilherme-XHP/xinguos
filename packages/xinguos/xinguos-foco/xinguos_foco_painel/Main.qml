@@ -16,6 +16,8 @@ ApplicationWindow {
     property var semana: []
     property var apps: []
     property var mudancas: ({})
+    property string diaEscolhido: ""
+    property var appsDoDia: []
     readonly property var chaves: ["sempre", "normal", "segundo_plano"]
 
     function total(lista) {
@@ -31,6 +33,11 @@ ApplicationWindow {
     function atualizarUso() {
         hoje = foco.hoje()
         semana = foco.semana()
+        if (diaEscolhido !== "") appsDoDia = foco.dia(diaEscolhido)
+    }
+    function abrirDia(data) {
+        diaEscolhido = (diaEscolhido === data) ? "" : data
+        appsDoDia = diaEscolhido === "" ? [] : foco.dia(diaEscolhido)
     }
     function atualizar() {
         atualizarUso()
@@ -147,11 +154,35 @@ ApplicationWindow {
                 clip: true
                 spacing: 6
                 model: janela.semana
+                delegate: ItemDelegate {
+                    width: ListView.view.width
+                    highlighted: modelData.data === janela.diaEscolhido
+                    onClicked: janela.abrirDia(modelData.data)
+                    contentItem: Barra {
+                        rotulo: modelData.dia
+                        texto: modelData.texto
+                        fracao: modelData.segundos / janela.maior(janela.semana)
+                    }
+                }
+            }
+            Label {
+                text: janela.diaEscolhido === "" ? "Clique num dia para ver os apps dele." : "Apps do dia:"
+                opacity: janela.diaEscolhido === "" ? 0.7 : 1
+                font.bold: janela.diaEscolhido !== ""
+            }
+            ListView {
+                Layout.fillWidth: true
+                Layout.preferredHeight: janela.diaEscolhido === "" ? 0 : Math.min(contentHeight, 200)
+                visible: janela.diaEscolhido !== ""
+                clip: true
+                spacing: 6
+                model: janela.appsDoDia
                 delegate: Barra {
                     width: ListView.view.width
-                    rotulo: modelData.dia
+                    icone: modelData.icone
+                    rotulo: modelData.nome
                     texto: modelData.texto
-                    fracao: modelData.segundos / janela.maior(janela.semana)
+                    fracao: modelData.segundos / janela.maior(janela.appsDoDia)
                 }
             }
         }

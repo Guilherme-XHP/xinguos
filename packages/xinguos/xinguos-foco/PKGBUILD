@@ -1,6 +1,6 @@
 pkgname=xinguos-foco
 pkgver=0.1.0
-pkgrel=1
+pkgrel=2
 pkgdesc="Foco do XInguOS: prioridade de CPU/disco para o app em foco e tempo de uso (Bem-Estar)"
 arch=(any)
 url="https://github.com/Guilherme-XHP/xinguos"

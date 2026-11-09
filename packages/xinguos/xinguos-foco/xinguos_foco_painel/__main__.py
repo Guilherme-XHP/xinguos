@@ -40,6 +40,10 @@ class Backend(QObject):
     def semana(self):
         return dados.resumo_semana(self.banco, date.today())
 
+    @Slot(str, result="QVariantList")
+    def dia(self, data_iso):
+        return dados.resumo_dia(self.banco, data_iso)
+
     @Slot(result="QVariantList")
     def apps(self):
         return dados.apps_conhecidos(self.banco, self._cfg())
