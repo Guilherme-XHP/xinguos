@@ -7,6 +7,7 @@ topo.location = "top";
 topo.height = 28;
 topo.floating = false;
 topo.lengthMode = "fill";
+topo.hiding = "none";
 
 var launcher = topo.addWidget("org.kde.plasma.kickoff");
 launcher.currentConfigGroup = ["General"];

@@ -23,10 +23,12 @@ atalho() { # atalho <grupo...> -- <chave> <valor>
 
 # 1. layout antigo do Plasma (conta criada antes do XInguOS) vai para backup, para o
 #    plasmashell gerar o layout do tema org.xinguos.desktop
-applets="$HOME/.config/plasma-org.kde.plasma.desktop-appletsrc"
-if [ -e "$applets" ] && [ ! -e "$applets.antes-xinguos" ]; then
-  mv "$applets" "$applets.antes-xinguos"
-fi
+#    (o appletsrc guarda os widgets; o plasmashellrc guarda altura/flutuar/auto-ocultar dos painéis)
+for antigo in "$HOME/.config/plasma-org.kde.plasma.desktop-appletsrc" "$HOME/.config/plasmashellrc"; do
+  if [ -e "$antigo" ] && [ ! -e "$antigo.antes-xinguos" ]; then
+    mv "$antigo" "$antigo.antes-xinguos" || avisos=$((avisos + 1))
+  fi
+done
 
 # 2. tema do XInguOS no nível do usuário
 k --file kdeglobals --group KDE --key LookAndFeelPackage org.xinguos.desktop

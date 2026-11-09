@@ -1,6 +1,6 @@
 pkgname=xinguos-apps
 pkgver=0.1.0
-pkgrel=1
+pkgrel=2
 pkgdesc="Apps do dia a dia do XInguOS (spec 8.1): navegador, mídia, 3D, dev, escritório e utilitários"
 arch=(any)
 url="https://github.com/Guilherme-XHP/xinguos"

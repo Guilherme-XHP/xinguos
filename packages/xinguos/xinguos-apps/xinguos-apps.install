@@ -1,5 +1,7 @@
 post_install() {
-  if [ -z "$(archlinux-java get 2>/dev/null)" ]; then
-    archlinux-java set java-21-openjdk || true
-  fi
+  # o .install dos próprios JDKs já define um padrão (o primeiro instalado, quase sempre o 17);
+  # o spec 8.1 quer o 21. Só troca se estiver vazio ou no 17 — escolha do usuário é respeitada.
+  case "$(archlinux-java get 2>/dev/null)" in
+    '' | java-17-openjdk) archlinux-java set java-21-openjdk || true ;;
+  esac
 }
