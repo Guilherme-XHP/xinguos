@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# stub do date +%s: tira o próximo horário da fila $RELOGIO
+h=$(head -1 "$RELOGIO"); sed -i 1d "$RELOGIO"; echo "$h"

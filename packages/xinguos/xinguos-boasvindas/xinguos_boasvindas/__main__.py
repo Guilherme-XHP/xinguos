@@ -3,6 +3,7 @@
 --primeira-vez: chamado pelo autostart; só abre se ainda não foi visto (e marca como visto).
 """
 import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -61,6 +62,40 @@ class Backend(QObject):
             (self.estado / MARCA).unlink(missing_ok=True)
         else:
             marcar_visto(self.estado)
+
+    @Slot(result="QVariantMap")
+    def sessao(self):
+        """Sessão ao ligar e modo do Gaming (só com o xinguos-gaming instalado)."""
+        if not shutil.which("xinguos-session-select"):
+            return {"disponivel": False, "padrao": "ultima", "modo": "compativel"}
+        try:
+            r = subprocess.run(["xinguos-session-select", "--status"], capture_output=True, text=True,
+                               timeout=10, check=False)
+        except (OSError, subprocess.SubprocessError):
+            return {"disponivel": False, "padrao": "ultima", "modo": "compativel"}
+        valores = dict(linha.split("=", 1) for linha in r.stdout.splitlines() if "=" in linha)
+        return {"disponivel": True, "padrao": valores.get("padrao", "ultima"),
+                "modo": valores.get("modo", "compativel")}
+
+    def _session_select(self, opcao, valor, validos, rotulo):
+        if valor not in validos:
+            return f"Valor inválido: {valor}"
+        try:
+            r = subprocess.run(["xinguos-session-select", opcao, valor], capture_output=True, text=True,
+                               timeout=60, check=False)
+        except (OSError, subprocess.SubprocessError) as e:
+            return f"Não deu certo: {e}"
+        if r.returncode != 0:
+            return f"Não deu certo: {(r.stderr or '').strip() or r.returncode}"
+        return f"{rotulo}: {valor}."
+
+    @Slot(str, result=str)
+    def definirPadrao(self, valor):  # noqa: N802
+        return self._session_select("--default", valor, ("ultima", "desktop", "gaming"), "Ao ligar")
+
+    @Slot(str, result=str)
+    def definirModo(self, valor):  # noqa: N802
+        return self._session_select("--modo", valor, ("compativel", "completo"), "Gaming Mode")
 
     @Slot("QVariantList", result=str)
     def instalar(self, ids):

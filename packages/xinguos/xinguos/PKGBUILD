@@ -1,0 +1,9 @@
+pkgname=xinguos
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="XInguOS completo: base, kernels, desktop, Gaming Mode, boas-vindas e identidade visual"
+arch=(any)
+url="https://github.com/Guilherme-XHP/xinguos"
+license=(GPL-3.0-or-later)
+depends=(xinguos-base xinguos-kernels xinguos-desktop xinguos-gaming xinguos-boasvindas xinguos-branding)
+optdepends=('xinguos-apps: os apps pessoais (vários GB)')

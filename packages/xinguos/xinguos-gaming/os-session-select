@@ -1,0 +1,3 @@
+#!/bin/sh
+# gancho do steamos-session-select (gamescope-session-steam): a troca de sessão do XInguOS
+exec /usr/bin/xinguos-session-select "$@"

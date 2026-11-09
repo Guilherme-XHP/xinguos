@@ -1,0 +1,6 @@
+[Desktop Entry]
+Name=XInguOS Gaming
+Comment=Steam em tela cheia, estilo Steam Deck
+Exec=/usr/lib/xinguos/xinguos-gaming-sessao
+Type=Application
+DesktopNames=gamescope;KDE

@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+# xinguos-sessao-root — helper ROOT da troca de sessão, chamado por pkexec a partir do
+# xinguos-session-select. Valida tudo antes de gravar.
+#
+#   sessao <usuario> <sessao.desktop>   autologin do SDDM na sessão (só o próprio usuário)
+#   padrao gaming|desktop|ultima        sessão ao ligar (aplicada pelo xinguos-sessao-boot)
+#   modo completo|compativel            modo do Gaming Mode (spec 4.4)
+set -euo pipefail
+
+SDDM=${XINGUOS_SDDM_DIR:-/etc/sddm.conf.d}
+ETC=${XINGUOS_ETC:-/etc/xinguos}
+SESSOES=${XINGUOS_SESSOES:-/usr/share/wayland-sessions}
+
+uso() { echo "uso: xinguos-sessao-root sessao <usuario> <sessao.desktop> | padrao <gaming|desktop|ultima> | modo <completo|compativel>" >&2; exit 2; }
+die() { echo "xinguos-sessao-root: $*" >&2; exit 1; }
+
+gravar() {  # gravar <arquivo> <conteúdo> — troca atômica
+  local tmp
+  mkdir -p "$(dirname "$1")"
+  tmp=$(mktemp "$1.XXXXXX")
+  printf '%s\n' "$2" > "$tmp"
+  chmod 644 "$tmp"
+  mv -f "$tmp" "$1"
+}
+
+case "${1:-}" in
+  sessao)
+    [ $# -eq 3 ] || uso
+    usuario=$2
+    sessao=$3
+    [[ "$usuario" =~ ^[a-z_][a-z0-9_-]*$ ]] || die "usuário inválido: $usuario"
+    [[ "$sessao" =~ ^[A-Za-z0-9_][A-Za-z0-9._-]*\.desktop$ ]] || die "sessão inválida: $sessao"
+    [ -f "$SESSOES/$sessao" ] || die "sessão não existe: $SESSOES/$sessao"
+    uid=$(id -u "$usuario" 2>/dev/null) || die "usuário não existe: $usuario"
+    # pkexec informa quem chamou: só é permitido escolher a sessão de si mesmo
+    if [ -n "${PKEXEC_UID:-}" ] && [ "$uid" != "$PKEXEC_UID" ]; then
+      die "só é permitido escolher a própria sessão"
+    fi
+    gravar "$SDDM/zz-xinguos-session.conf" "$(printf '# gravado pelo xinguos-session-select\n[Autologin]\nUser=%s\nSession=%s\nRelogin=true' "$usuario" "$sessao")"
+    ;;
+  padrao)
+    [ $# -eq 2 ] || uso
+    case "$2" in gaming | desktop | ultima) ;; *) die "sessão padrão inválida: $2" ;; esac
+    gravar "$ETC/sessao.conf" "$(printf '# sessão ao ligar o PC: gaming, desktop ou ultima\nPADRAO=%s' "$2")"
+    # instalação nova (nenhuma troca feita ainda): fixar uma sessão liga o login automático
+    # de quem pediu, senão a escolha não teria efeito no boot
+    if [ "$2" != ultima ] && [ ! -f "$SDDM/zz-xinguos-session.conf" ] && [ -n "${PKEXEC_UID:-}" ]; then
+      usuario=$(id -nu "$PKEXEC_UID") || die "usuário $PKEXEC_UID não existe"
+      case "$2" in gaming) sessao=xinguos-gaming.desktop ;; *) sessao=plasma.desktop ;; esac
+      gravar "$SDDM/zz-xinguos-session.conf" "$(printf '# gravado pelo xinguos-session-select\n[Autologin]\nUser=%s\nSession=%s\nRelogin=true' "$usuario" "$sessao")"
+    fi
+    ;;
+  modo)
+    [ $# -eq 2 ] || uso
+    case "$2" in completo | compativel) ;; *) die "modo inválido: $2" ;; esac
+    # sem a marca de "gerado": vira escolha do usuário e o xinguos-hwdetect não sobrescreve
+    gravar "$ETC/gaming.conf" "$(printf '# modo do Gaming Mode escolhido pelo usuário: completo ou compativel\nMODO_GAMING=%s' "$2")"
+    ;;
+  *) uso ;;
+esac

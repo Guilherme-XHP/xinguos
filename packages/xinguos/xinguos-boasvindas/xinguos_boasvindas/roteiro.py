@@ -33,12 +33,13 @@ PASSOS: dict[str, str] = {
   url=$(curl -fsSL https://api.github.com/repos/GloriousEggroll/proton-ge-custom/releases/latest |
         python3 -c 'import json, sys; print(next(a["browser_download_url"] for a in json.load(sys.stdin)["assets"] if a["name"].endswith(".tar.gz")))') &&
   curl -fL "$url" | tar -xz -C "$d\"""",
+    "protonup-qt": FLATHUB.format(app="net.davidotek.pupgui2"),
     "impressao": ("sudo pacman -S --needed --noconfirm cups cups-pdf print-manager system-config-printer"
                   " && sudo systemctl enable --now cups.socket"),
 }
 
 PASSOS_DE_USUARIO = ["vesktop", "zapzap", "spotify", "natron", "curseforge", "claude-code", "android-sdk",
-                     "proton-ge"]
+                     "proton-ge", "protonup-qt"]
 
 _CABECALHO = """#!/usr/bin/env bash
 # Gerado pelo "Bem-vindo ao XInguOS". Cada passo roda mesmo que um anterior falhe.

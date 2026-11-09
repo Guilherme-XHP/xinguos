@@ -54,6 +54,8 @@ for f in /etc/systemd/system/multi-user.target.wants/sshd.service \
 done
 ! arch-chroot "$alvo" pacman -Q cloud-init >/dev/null 2>&1 || falhou "cloud-init continua instalado"
 grep -qx 'ID=xinguos' "$alvo/etc/os-release" || falhou "os-release não é do XInguOS"
-arch-chroot "$alvo" pacman -Q xinguos-desktop xinguos-boasvindas xinguos-foco xinguos-branding >/dev/null \
+arch-chroot "$alvo" pacman -Q xinguos-desktop xinguos-boasvindas xinguos-foco xinguos-branding xinguos-gaming >/dev/null \
   || falhou "faltam pacotes do XInguOS no sistema instalado"
+[ -f "$alvo/usr/share/wayland-sessions/xinguos-gaming.desktop" ] || falhou "sessão XInguOS Gaming não está instalada"
+[ -x "$alvo/usr/lib/os-session-select" ] || falhou "gancho os-session-select do Steam não está instalado"
 echo "teste-instalacao: ok"

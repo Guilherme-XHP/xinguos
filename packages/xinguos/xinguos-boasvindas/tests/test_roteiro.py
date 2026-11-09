@@ -10,7 +10,7 @@ IDS = [i.id for i in ITENS]
 
 def test_catalogo_na_ordem_do_spec():
     assert IDS == ["xinguos-apps", "vesktop", "zapzap", "spotify", "natron", "curseforge", "claude-code",
-                   "claude-desktop", "android-sdk", "proton-ge", "impressao"]
+                   "claude-desktop", "android-sdk", "proton-ge", "protonup-qt", "impressao"]
 
 
 def test_marcados_por_padrao():

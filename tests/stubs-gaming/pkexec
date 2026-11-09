@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# stub do pkexec: roda o comando direto (o PKEXEC_UID vem do ambiente do teste)
+echo "pkexec $*" >> "$LOG"
+exec bash "$@"

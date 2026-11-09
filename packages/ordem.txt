@@ -14,3 +14,6 @@ xinguos/xinguos-foco
 xinguos/xinguos-desktop
 xinguos/xinguos-apps
 aur/calamares
+aur/heroic-games-launcher-bin
+xinguos/xinguos-gaming
+xinguos/xinguos

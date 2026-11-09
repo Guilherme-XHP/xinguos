@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Voltar ao Gaming Mode
+GenericName=Gaming Mode
+Comment=Fecha a Área de Trabalho e abre o Steam em tela cheia (Win+Shift+G)
+Exec=xinguos-session-select gaming
+Icon=steam
+Categories=Game;
+Keywords=gaming;steam;deck;jogos;
+X-KDE-Shortcuts=Meta+Shift+G

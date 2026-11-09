@@ -1,0 +1,34 @@
+pkgname=xinguos-gaming
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="Gaming Mode do XInguOS: sessão Steam estilo Steam Deck, troca Gaming ↔ Desktop sem senha, MangoHud e GameMode"
+arch=(any)
+url="https://github.com/Guilherme-XHP/xinguos"
+license=(GPL-3.0-or-later)
+depends=(steam gamescope gamescope-session-git gamescope-session-steam-git mangohud lib32-mangohud
+         gamemode lib32-gamemode kwin polkit libnotify xinguos-hwdetect)
+optdepends=('heroic-games-launcher-bin: jogos da Epic, GOG e Amazon')
+install=xinguos-gaming.install
+
+# os arquivos moram junto deste PKGBUILD: usa $startdir
+package() {
+  cd "$startdir"
+  install -Dm755 xinguos-session-select "$pkgdir/usr/bin/xinguos-session-select"
+  install -Dm755 os-session-select "$pkgdir/usr/lib/os-session-select"
+  install -Dm755 xinguos-sessao-root "$pkgdir/usr/lib/xinguos/xinguos-sessao-root"
+  install -Dm755 xinguos-sessao-boot "$pkgdir/usr/lib/xinguos/xinguos-sessao-boot"
+  install -Dm755 xinguos-gaming-sessao "$pkgdir/usr/lib/xinguos/xinguos-gaming-sessao"
+  install -Dm755 xinguos-gaming-aviso "$pkgdir/usr/lib/xinguos/xinguos-gaming-aviso"
+  install -Dm755 xinguos-steam-compativel "$pkgdir/usr/lib/xinguos/xinguos-steam-compativel"
+  install -Dm644 org.xinguos.sessao.policy "$pkgdir/usr/share/polkit-1/actions/org.xinguos.sessao.policy"
+  install -Dm644 49-xinguos-sessao.rules "$pkgdir/usr/share/polkit-1/rules.d/49-xinguos-sessao.rules"
+  install -Dm644 xinguos-gaming.desktop "$pkgdir/usr/share/wayland-sessions/xinguos-gaming.desktop"
+  install -Dm644 xinguos-sessao-boot.service "$pkgdir/usr/lib/systemd/system/xinguos-sessao-boot.service"
+  install -Dm644 org.xinguos.gaming.desktop "$pkgdir/usr/share/applications/org.xinguos.gaming.desktop"
+  install -Dm644 xinguos-gaming-aviso.desktop "$pkgdir/etc/xdg/autostart/xinguos-gaming-aviso.desktop"
+  install -Dm644 MangoHud.conf "$pkgdir/etc/skel/.config/MangoHud/MangoHud.conf"
+  install -Dm644 MangoHud.conf "$pkgdir/usr/share/xinguos/MangoHud.conf"
+  # o kglobalacceld do Plasma 6 só lê atalhos padrão (X-KDE-Shortcuts) daqui: Win+Shift+G
+  install -dm755 "$pkgdir/usr/share/kglobalaccel"
+  ln -s ../applications/org.xinguos.gaming.desktop "$pkgdir/usr/share/kglobalaccel/org.xinguos.gaming.desktop"
+}

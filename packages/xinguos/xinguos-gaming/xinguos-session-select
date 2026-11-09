@@ -1,0 +1,86 @@
+#!/usr/bin/env bash
+# xinguos-session-select — troca entre o Gaming Mode e a Área de Trabalho (spec 4.2).
+# Também é o /usr/lib/os-session-select, que o steamos-session-select do Steam chama
+# no botão "Mudar para a Área de Trabalho" (com "plasma").
+#
+#   xinguos-session-select gaming|gamescope        vai para o Gaming Mode
+#   xinguos-session-select desktop|plasma[-...]    vai para a Área de Trabalho
+#   xinguos-session-select --proxima gaming|desktop  só grava a próxima sessão (sem sair)
+#   xinguos-session-select --default gaming|desktop|ultima   sessão ao ligar o PC
+#   xinguos-session-select --modo completo|compativel        modo do Gaming (spec 4.4)
+#   xinguos-session-select --status
+#
+# Quem grava como root é o helper, liberado sem senha pela regra do polkit
+# 49-xinguos-sessao.rules (grupo wheel, sessão local ativa).
+# A troca encerra a sessão com educação: no Plasma, logout normal (os apps podem pedir para
+# salvar); no Gaming, "steam -shutdown". A marca troca-pedida diz à sessão Gaming que a
+# saída foi pedida (não é queda).
+set -euo pipefail
+
+HELPER=${XINGUOS_HELPER:-/usr/lib/xinguos/xinguos-sessao-root}
+ETC=${XINGUOS_ETC:-/etc/xinguos}
+ESTADO=${XINGUOS_ESTADO:-${XDG_STATE_HOME:-$HOME/.local/state}/xinguos}
+ESPERA=${XINGUOS_ESPERA_TROCA:-20}
+
+uso() {
+  echo "uso: xinguos-session-select gaming|desktop | --proxima gaming|desktop | --default gaming|desktop|ultima | --modo completo|compativel | --status" >&2
+  exit 2
+}
+
+sessao_de() {
+  case "$1" in
+    gaming | gamescope) echo xinguos-gaming.desktop ;;
+    desktop | plasma | plasma-*) echo plasma.desktop ;;
+    *) uso ;;
+  esac
+}
+
+gravar_proxima() {
+  pkexec "$HELPER" sessao "$(id -un)" "$1"
+}
+
+encerrar_sessao() {
+  if [ -n "${XDG_SESSION_ID:-}" ]; then
+    loginctl terminate-session "$XDG_SESSION_ID"
+  else
+    echo "xinguos-session-select: sessão atual desconhecida (sem XDG_SESSION_ID); saia e entre de novo" >&2
+    exit 1
+  fi
+}
+
+trocar() {
+  gravar_proxima "$1"
+  mkdir -p "$ESTADO"
+  : > "$ESTADO/troca-pedida"
+  case "${XDG_CURRENT_DESKTOP:-}" in
+    *gamescope*)
+      # Gaming: o Steam fecha direito (nuvem, configurações) e a sessão termina com ele;
+      # se não terminar em $ESPERA s, encerra
+      steam -shutdown || true
+      if [ "$ESPERA" -gt 0 ]; then
+        (sleep "$ESPERA"; encerrar_sessao) >/dev/null 2>&1 &
+      fi
+      ;;
+    *)
+      # Plasma: logout normal, que pergunta antes de fechar trabalho não salvo
+      if command -v qdbus6 >/dev/null && qdbus6 org.kde.Shutdown /Shutdown logout; then
+        :
+      else
+        encerrar_sessao
+      fi
+      ;;
+  esac
+}
+
+case "${1:-}" in
+  --proxima) [ $# -eq 2 ] || uso; gravar_proxima "$(sessao_de "$2")" ;;
+  --default) [ $# -eq 2 ] || uso; pkexec "$HELPER" padrao "$2" ;;
+  --modo) [ $# -eq 2 ] || uso; pkexec "$HELPER" modo "$2" ;;
+  --status)
+    valor() { local v; v=$(sed -n "s/^$2=//p" "$1" 2>/dev/null | tail -1); echo "${v:-$3}"; }
+    echo "padrao=$(valor "$ETC/sessao.conf" PADRAO ultima)"
+    echo "modo=$(valor "$ETC/gaming.conf" MODO_GAMING compativel)"
+    ;;
+  gaming | gamescope | desktop | plasma | plasma-*) [ $# -eq 1 ] || uso; trocar "$(sessao_de "$1")" ;;
+  *) uso ;;
+esac

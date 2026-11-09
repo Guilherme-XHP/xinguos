@@ -12,7 +12,7 @@ setup_file() {
 }
 
 @test "leva o instalador, os kernels do sistema instalado, branding e boas-vindas" {
-  for p in calamares xinguos-kernels xinguos-branding xinguos-boasvindas xinguos-desktop grub efibootmgr os-prober btrfs-progs; do
+  for p in xinguos-gaming calamares xinguos-kernels xinguos-branding xinguos-boasvindas xinguos-desktop grub efibootmgr os-prober btrfs-progs; do
     grep -qx "$p" "$PERFIL/packages.x86_64" || { echo "falta $p"; false; }
   done
   run grep -x xinguos-apps "$PERFIL/packages.x86_64"
