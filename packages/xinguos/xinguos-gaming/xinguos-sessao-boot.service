@@ -1,0 +1,10 @@
+[Unit]
+Description=XInguOS: aplica a sessão padrão (Gaming/Desktop) ao login automático
+Before=display-manager.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/lib/xinguos/xinguos-sessao-boot
+
+[Install]
+WantedBy=multi-user.target

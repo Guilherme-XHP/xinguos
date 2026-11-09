@@ -161,3 +161,41 @@ sessao() {  # sessao <rc> <duração>
   grep -qx "Exec=/usr/lib/xinguos/xinguos-gaming-sessao" "$G/xinguos-gaming.desktop"
   grep -qx "Name=XInguOS Gaming" "$G/xinguos-gaming.desktop"
 }
+
+# --- Task 3: pacotes ---
+
+@test "pacote xinguos-gaming instala tudo nos caminhos certos" {
+  for p in /usr/bin/xinguos-session-select /usr/lib/os-session-select /usr/lib/xinguos/xinguos-sessao-root \
+           /usr/lib/xinguos/xinguos-gaming-sessao /usr/share/polkit-1/rules.d/49-xinguos-sessao.rules \
+           /usr/share/polkit-1/actions/org.xinguos.sessao.policy /usr/share/wayland-sessions/xinguos-gaming.desktop \
+           /usr/lib/systemd/system/xinguos-sessao-boot.service /usr/share/applications/org.xinguos.gaming.desktop \
+           /etc/xdg/autostart/xinguos-gaming-aviso.desktop /etc/skel/.config/MangoHud/MangoHud.conf; do
+    grep -q "$p" "$G/PKGBUILD" || { echo "falta $p"; false; }
+  done
+  run bash -c "source $G/PKGBUILD; printf '%s\n' \"\${depends[@]}\""
+  for d in steam gamescope-session-steam-git mangohud lib32-mangohud gamemode lib32-gamemode polkit; do
+    grep -qx "$d" <<<"$output" || { echo "falta depends $d"; false; }
+  done
+  grep -q "systemctl enable xinguos-sessao-boot.service" "$G/xinguos-gaming.install"
+}
+
+@test "Win+Shift+G volta ao Gaming Mode; MangoHud começa escondido com Shift+F12" {
+  grep -qx "X-KDE-Shortcuts=Meta+Shift+G" "$G/org.xinguos.gaming.desktop"
+  grep -qx "Exec=xinguos-session-select gaming" "$G/org.xinguos.gaming.desktop"
+  grep -qx "no_display" "$G/MangoHud.conf"
+  grep -qx "toggle_hud=Shift_L+F12" "$G/MangoHud.conf"
+}
+
+@test "metapacote xinguos puxa tudo menos os apps pesados; ordem de build certa" {
+  run bash -c "source packages/xinguos/xinguos/PKGBUILD; printf '%s\n' \"\${depends[@]}\""
+  for d in xinguos-base xinguos-kernels xinguos-desktop xinguos-gaming xinguos-boasvindas xinguos-branding; do
+    grep -qx "$d" <<<"$output"
+  done
+  run grep -x xinguos-apps <<<"$output"
+  [ "$status" -ne 0 ]
+  g=$(grep -nx 'xinguos/xinguos-gaming' packages/ordem.txt | cut -d: -f1)
+  m=$(grep -nx 'xinguos/xinguos' packages/ordem.txt | cut -d: -f1)
+  s=$(grep -nx 'aur/gamescope-session-steam-git' packages/ordem.txt | cut -d: -f1)
+  [ -n "$g" ] && [ -n "$m" ] && [ "$s" -lt "$g" ] && [ "$g" -lt "$m" ]
+  [ "$m" -eq "$(grep -cv '^\s*$' packages/ordem.txt)" ]
+}

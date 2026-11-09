@@ -48,4 +48,10 @@ grep -q '^s ' /tmp/foco.txt
 pacman -Sw --noconfirm calamares
 pacman -Qlp /var/cache/pacman/pkg/calamares-*.pkg.tar.zst | grep -q '/unpackfs/main.py$'
 pacman -Qlp /var/cache/pacman/pkg/calamares-*.pkg.tar.zst | grep -q '/bootloader/main.py$'
+# Gaming Mode: o metapacote resolve tudo e o xinguos-gaming traz o gancho do Steam
+pacman -Sp --print-format '%n' xinguos > /tmp/xinguos.txt
+grep -qx xinguos-gaming /tmp/xinguos.txt
+grep -qx steam /tmp/xinguos.txt
+pacman -Sw --noconfirm xinguos-gaming
+pacman -Qlp /var/cache/pacman/pkg/xinguos-gaming-*.pkg.tar.zst | grep -q '/usr/lib/os-session-select$'
 echo "smoke-repo: ok"

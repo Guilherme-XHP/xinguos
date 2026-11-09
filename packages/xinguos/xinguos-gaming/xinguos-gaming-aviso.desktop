@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Aviso do Gaming Mode
+Exec=/usr/lib/xinguos/xinguos-gaming-aviso
+OnlyShowIn=KDE;
+NoDisplay=true
+X-KDE-autostart-phase=2

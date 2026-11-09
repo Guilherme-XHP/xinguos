@@ -80,6 +80,8 @@ def peso(app: str, cfg: Config, em_foco: bool) -> int:
         return PESO_SEMPRE
     if app in cfg.segundo_plano:
         return PESO_SEGUNDO_PLANO
+    if em_foco and app.startswith("steam_app_"):
+        return PESO_SEMPRE  # jogo do Steam em foco (spec 7.2)
     return PESO_FOCO if em_foco else PESO_NORMAL
 
 

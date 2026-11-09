@@ -70,3 +70,10 @@ def test_padrao_do_sistema_e_valido(tmp_path):
     assert avisos == []
     assert cfg.segundo_plano == {"org.qbittorrent.qBittorrent"}
     assert cfg.sempre == set() and cfg.limites_min == {} and cfg.sem_autotile == set()
+
+
+def test_jogo_do_steam_em_foco_ganha_peso_1000():
+    cfg = Config(sempre=set(), segundo_plano={"steam_app_99"}, limites_min={}, sem_autotile=set())
+    assert peso("steam_app_1172470", cfg, em_foco=True) == 1000
+    assert peso("steam_app_1172470", cfg, em_foco=False) == 100
+    assert peso("steam_app_99", cfg, em_foco=True) == 25   # escolha do usuário vale mais

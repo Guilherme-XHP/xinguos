@@ -1,0 +1,8 @@
+post_install() {
+  systemctl enable xinguos-sessao-boot.service || true
+}
+
+pre_remove() {
+  systemctl disable xinguos-sessao-boot.service || true
+  rm -f /etc/sddm.conf.d/zz-xinguos-session.conf
+}
