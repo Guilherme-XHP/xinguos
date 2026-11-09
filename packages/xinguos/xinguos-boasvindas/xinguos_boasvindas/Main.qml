@@ -95,7 +95,7 @@ ApplicationWindow {
             Label { text: "Ao ligar o PC, abrir:" }
             ComboBox {
                 Layout.fillWidth: true
-                model: ["A última sessão usada", "A Área de Trabalho", "O Gaming Mode"]
+                model: ["A última sessão usada", "A Área de Trabalho (entra sem senha)", "O Gaming Mode (entra sem senha)"]
                 currentIndex: Math.max(0, janela.padroes.indexOf(janela.sessao.padrao))
                 onActivated: status.text = boasvindas.definirPadrao(janela.padroes[currentIndex])
             }

@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+# xinguos-steam-compativel — o que o KWin roda no Gaming Mode compatível
+# (kwin_wayland --exit-with-session). Steam em tela cheia com:
+#   - MangoHud ligado mas escondido (Shift+F12), usando a config do usuário se houver;
+#   - Desligar/Reiniciar do Steam funcionando (as sentinelas que a sessão do gamescope trata).
+set -uo pipefail
+
+SENT=${XINGUOS_SENTINELAS:-/tmp}
+export STEAMOS_STEAM_REBOOT_SENTINEL="$SENT/steamos-reboot-sentinel"
+export STEAMOS_STEAM_SHUTDOWN_SENTINEL="$SENT/steamos-shutdown-sentinel"
+rm -f "$STEAMOS_STEAM_REBOOT_SENTINEL" "$STEAMOS_STEAM_SHUTDOWN_SENTINEL"
+
+export MANGOHUD=1
+cfg="${XDG_CONFIG_HOME:-$HOME/.config}/MangoHud/MangoHud.conf"
+if [ -f "$cfg" ]; then
+  export MANGOHUD_CONFIGFILE="$cfg"
+else
+  export MANGOHUD_CONFIGFILE=/usr/share/xinguos/MangoHud.conf
+fi
+
+# portais (diálogo de arquivo etc.) precisam do ambiente desta sessão
+dbus-update-activation-environment --systemd WAYLAND_DISPLAY DISPLAY XDG_CURRENT_DESKTOP >/dev/null 2>&1 || true
+
+steam -gamepadui -steamos3
+rc=$?
+
+if [ -e "$STEAMOS_STEAM_SHUTDOWN_SENTINEL" ]; then
+  rm -f "$STEAMOS_STEAM_SHUTDOWN_SENTINEL"
+  systemctl poweroff
+elif [ -e "$STEAMOS_STEAM_REBOOT_SENTINEL" ]; then
+  rm -f "$STEAMOS_STEAM_REBOOT_SENTINEL"
+  systemctl reboot
+fi
+exit "$rc"

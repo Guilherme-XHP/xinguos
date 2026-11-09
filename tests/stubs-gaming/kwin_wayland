@@ -1,3 +1,4 @@
 #!/usr/bin/env bash
 echo "kwin_wayland $*" >> "$LOG"
+[ -n "${FAKE_TROCA:-}" ] && touch "$FAKE_TROCA"
 exit "${FAKE_RC:-0}"

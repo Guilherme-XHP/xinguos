@@ -19,6 +19,7 @@ package() {
   install -Dm755 xinguos-sessao-boot "$pkgdir/usr/lib/xinguos/xinguos-sessao-boot"
   install -Dm755 xinguos-gaming-sessao "$pkgdir/usr/lib/xinguos/xinguos-gaming-sessao"
   install -Dm755 xinguos-gaming-aviso "$pkgdir/usr/lib/xinguos/xinguos-gaming-aviso"
+  install -Dm755 xinguos-steam-compativel "$pkgdir/usr/lib/xinguos/xinguos-steam-compativel"
   install -Dm644 org.xinguos.sessao.policy "$pkgdir/usr/share/polkit-1/actions/org.xinguos.sessao.policy"
   install -Dm644 49-xinguos-sessao.rules "$pkgdir/usr/share/polkit-1/rules.d/49-xinguos-sessao.rules"
   install -Dm644 xinguos-gaming.desktop "$pkgdir/usr/share/wayland-sessions/xinguos-gaming.desktop"
@@ -26,4 +27,8 @@ package() {
   install -Dm644 org.xinguos.gaming.desktop "$pkgdir/usr/share/applications/org.xinguos.gaming.desktop"
   install -Dm644 xinguos-gaming-aviso.desktop "$pkgdir/etc/xdg/autostart/xinguos-gaming-aviso.desktop"
   install -Dm644 MangoHud.conf "$pkgdir/etc/skel/.config/MangoHud/MangoHud.conf"
+  install -Dm644 MangoHud.conf "$pkgdir/usr/share/xinguos/MangoHud.conf"
+  # o kglobalacceld do Plasma 6 só lê atalhos padrão (X-KDE-Shortcuts) daqui: Win+Shift+G
+  install -dm755 "$pkgdir/usr/share/kglobalaccel"
+  ln -s ../applications/org.xinguos.gaming.desktop "$pkgdir/usr/share/kglobalaccel/org.xinguos.gaming.desktop"
 }

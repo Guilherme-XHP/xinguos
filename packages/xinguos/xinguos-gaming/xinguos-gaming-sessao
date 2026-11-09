@@ -3,8 +3,12 @@
 #   completo:   gamescope-session-plus steam (gamescope embutido + Steam + mangoapp)
 #   compatível: KWin sozinho + Steam em tela cheia (sem painéis; para GPUs onde o
 #               gamescope dá tela preta, como as GTX 10xx no driver 580xx)
-# Contador de falhas: saída ≠ 0 em menos de 60 s conta; com 2 seguidas, o próximo login
-# vai para a Área de Trabalho e fica um aviso para o Plasma mostrar. Nunca existe loop.
+# Como a sessão termina:
+#   - troca pedida (marca troca-pedida do xinguos-session-select): segue para onde foi pedido;
+#   - durou menos de 60 s sem troca pedida: QUEDA (o código de saída não serve: o
+#     gamescope-session-plus sempre sai 0). Com 2 quedas seguidas, o próximo login vai para
+#     a Área de Trabalho e fica um aviso. Nunca existe loop (spec 4.4);
+#   - sessão longa sem troca pedida (o usuário saiu do Steam): vai para a Área de Trabalho.
 set -uo pipefail
 
 ETC=${XINGUOS_ETC:-/etc/xinguos}
@@ -12,28 +16,35 @@ ESTADO=${XINGUOS_ESTADO:-${XDG_STATE_HOME:-$HOME/.local/state}/xinguos}
 LIMITE_RAPIDA=60
 MAX_FALHAS=2
 
+mkdir -p "$ESTADO"
+rm -f "$ESTADO/troca-pedida"
 modo=$(sed -n 's/^MODO_GAMING=//p' "$ETC/gaming.conf" 2>/dev/null | tail -1)
 inicio=$(date +%s)
 case "$modo" in
   completo) gamescope-session-plus steam ;;
-  *) kwin_wayland --xwayland --exit-with-session "steam -gamepadui -steamos3" ;;
+  *) kwin_wayland --xwayland --exit-with-session /usr/lib/xinguos/xinguos-steam-compativel ;;
 esac
 rc=$?
 duracao=$(( $(date +%s) - inicio ))
 
-mkdir -p "$ESTADO"
 contador="$ESTADO/gaming-falhas"
-if [ "$rc" -ne 0 ] && [ "$duracao" -lt "$LIMITE_RAPIDA" ]; then
-  falhas=$(( $(cat "$contador" 2>/dev/null || echo 0) + 1 ))
+if [ -e "$ESTADO/troca-pedida" ]; then
+  rm -f "$ESTADO/troca-pedida"
+  echo 0 > "$contador"
+elif [ "$duracao" -lt "$LIMITE_RAPIDA" ]; then
+  anterior=$(cat "$contador" 2>/dev/null || true)
+  [[ "$anterior" =~ ^[0-9]+$ ]] || anterior=0
+  falhas=$((anterior + 1))
   if [ "$falhas" -ge "$MAX_FALHAS" ]; then
     echo 0 > "$contador"
     : > "$ESTADO/gaming-aviso"
     echo "xinguos-gaming-sessao: o Gaming Mode caiu $falhas vezes seguidas; indo para a Área de Trabalho" >&2
-    xinguos-session-select desktop || true
+    xinguos-session-select --proxima desktop || true
   else
     echo "$falhas" > "$contador"
   fi
 else
   echo 0 > "$contador"
+  xinguos-session-select --proxima desktop || true
 fi
 exit "$rc"

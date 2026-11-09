@@ -115,7 +115,7 @@ sessao() {  # sessao <rc> <duração>
   mkdir -p "$T/bin"; printf '#!/usr/bin/env bash\necho "xinguos-session-select $*" >> "%s"\n' "$LOG" > "$T/bin/xinguos-session-select"; chmod +x "$T/bin/xinguos-session-select"
   sessao 0 600
   [ "$status" -eq 0 ]
-  grep -qx 'kwin_wayland --xwayland --exit-with-session steam -gamepadui -steamos3' "$LOG"
+  grep -qx 'kwin_wayland --xwayland --exit-with-session /usr/lib/xinguos/xinguos-steam-compativel' "$LOG"
   mkdir -p "$XINGUOS_ETC"; echo "MODO_GAMING=completo" > "$XINGUOS_ETC/gaming.conf"
   sessao 0 600
   grep -qx 'gamescope-session-plus steam' "$LOG"
@@ -126,23 +126,42 @@ sessao() {  # sessao <rc> <duração>
   sessao 1 5
   [ "$status" -eq 1 ]
   [ "$(cat "$XINGUOS_ESTADO/gaming-falhas")" = 1 ]
-  run grep -q "xinguos-session-select desktop" "$LOG"
+  run grep -q "xinguos-session-select --proxima desktop" "$LOG"
   [ "$status" -ne 0 ]
   sessao 1 5
-  grep -qx "xinguos-session-select desktop" "$LOG"
+  grep -qx "xinguos-session-select --proxima desktop" "$LOG"
   [ -e "$XINGUOS_ESTADO/gaming-aviso" ]
   [ "$(cat "$XINGUOS_ESTADO/gaming-falhas")" = 0 ]
 }
 
-@test "sessão longa ou saída normal zera o contador" {
+@test "sessão longa zera o contador; sair do Steam leva para a Área de Trabalho" {
   mkdir -p "$T/bin"; printf '#!/usr/bin/env bash\necho "xinguos-session-select $*" >> "%s"\n' "$LOG" > "$T/bin/xinguos-session-select"; chmod +x "$T/bin/xinguos-session-select"
   sessao 1 5
-  sessao 1 300
+  sessao 0 300
   [ "$(cat "$XINGUOS_ESTADO/gaming-falhas")" = 0 ]
-  sessao 1 5
-  sessao 0 3
+  grep -qx "xinguos-session-select --proxima desktop" "$LOG"
+  [ ! -e "$XINGUOS_ESTADO/gaming-aviso" ]
+}
+
+@test "queda rápida conta mesmo com saída 0 (o gamescope-session-plus sempre sai 0)" {
+  mkdir -p "$T/bin"; printf '#!/usr/bin/env bash\necho "xinguos-session-select $*" >> "%s"\n' "$LOG" > "$T/bin/xinguos-session-select"; chmod +x "$T/bin/xinguos-session-select"
+  mkdir -p "$XINGUOS_ETC"; echo "MODO_GAMING=completo" > "$XINGUOS_ETC/gaming.conf"
+  sessao 0 4
+  [ "$(cat "$XINGUOS_ESTADO/gaming-falhas")" = 1 ]
+  sessao 0 4
+  grep -qx "xinguos-session-select --proxima desktop" "$LOG"
+  [ -e "$XINGUOS_ESTADO/gaming-aviso" ]
+}
+
+@test "troca pedida (Mudar para a Área de Trabalho) não conta como falha" {
+  mkdir -p "$T/bin"; printf '#!/usr/bin/env bash\necho "xinguos-session-select $*" >> "%s"\n' "$LOG" > "$T/bin/xinguos-session-select"; chmod +x "$T/bin/xinguos-session-select"
+  mkdir -p "$XINGUOS_ESTADO"; echo 1 > "$XINGUOS_ESTADO/gaming-falhas"
+  # marca velha (da troca Plasma → Gaming) é limpa no começo; a que vale é a criada durante a sessão
+  touch "$XINGUOS_ESTADO/troca-pedida"
+  FAKE_TROCA="$XINGUOS_ESTADO/troca-pedida" sessao 0 4
   [ "$(cat "$XINGUOS_ESTADO/gaming-falhas")" = 0 ]
-  run grep -q "xinguos-session-select desktop" "$LOG"
+  [ ! -e "$XINGUOS_ESTADO/troca-pedida" ]
+  run grep -q "xinguos-session-select" "$LOG"
   [ "$status" -ne 0 ]
 }
 
@@ -198,4 +217,65 @@ sessao() {  # sessao <rc> <duração>
   s=$(grep -nx 'aur/gamescope-session-steam-git' packages/ordem.txt | cut -d: -f1)
   [ -n "$g" ] && [ -n "$m" ] && [ "$s" -lt "$g" ] && [ "$g" -lt "$m" ]
   [ "$m" -eq "$(grep -cv '^\s*$' packages/ordem.txt)" ]
+}
+
+# --- correções da revisão final ---
+
+@test "troca pelo Plasma faz logout educado (apps podem salvar) e marca a troca pedida" {
+  mkdir -p "$T/bin"
+  printf '#!/usr/bin/env bash\necho "qdbus6 $*" >> "%s"\n' "$LOG" > "$T/bin/qdbus6"; chmod +x "$T/bin/qdbus6"
+  PATH="$T/bin:$PATH" XDG_CURRENT_DESKTOP=KDE run bash "$G/xinguos-session-select" gaming
+  [ "$status" -eq 0 ]
+  grep -qx "qdbus6 org.kde.Shutdown /Shutdown logout" "$LOG"
+  run grep -q "loginctl" "$LOG"
+  [ "$status" -ne 0 ]
+  [ -e "$XINGUOS_ESTADO/troca-pedida" ]
+  autologin | grep -qx "Session=xinguos-gaming.desktop"
+}
+
+@test "troca pelo Gaming fecha o Steam direito (steam -shutdown)" {
+  mkdir -p "$T/bin"
+  printf '#!/usr/bin/env bash\necho "steam $*" >> "%s"\n' "$LOG" > "$T/bin/steam"; chmod +x "$T/bin/steam"
+  PATH="$T/bin:$PATH" XDG_CURRENT_DESKTOP=gamescope:KDE XINGUOS_ESPERA_TROCA=0 run bash "$G/xinguos-session-select" plasma
+  [ "$status" -eq 0 ]
+  grep -qx "steam -shutdown" "$LOG"
+  [ -e "$XINGUOS_ESTADO/troca-pedida" ]
+  autologin | grep -qx "Session=plasma.desktop"
+}
+
+@test "--proxima só grava o autologin, sem encerrar nada" {
+  run bash "$G/xinguos-session-select" --proxima desktop
+  [ "$status" -eq 0 ]
+  autologin | grep -qx "Session=plasma.desktop"
+  run grep -qE "loginctl|steam|qdbus6" "$LOG"
+  [ "$status" -ne 0 ]
+}
+
+@test "fixar Gaming ao ligar numa instalação nova já cria o login automático" {
+  run bash "$G/xinguos-session-select" --default gaming
+  [ "$status" -eq 0 ]
+  autologin | grep -qx "User=xingu"
+  autologin | grep -qx "Session=xinguos-gaming.desktop"
+  rm -rf "$XINGUOS_SDDM_DIR"
+  run bash "$G/xinguos-session-select" --default ultima
+  [ ! -e "$XINGUOS_SDDM_DIR/zz-xinguos-session.conf" ]
+}
+
+@test "modo compatível: MangoHud escondido e Desligar/Reiniciar do Steam funcionam" {
+  mkdir -p "$T/bin"
+  printf '#!/usr/bin/env bash\necho "steam $* MANGOHUD=$MANGOHUD CFG=$MANGOHUD_CONFIGFILE" >> "%s"\ntouch "$STEAMOS_STEAM_SHUTDOWN_SENTINEL"\n' "$LOG" > "$T/bin/steam"
+  printf '#!/usr/bin/env bash\necho "systemctl $*" >> "%s"\n' "$LOG" > "$T/bin/systemctl"
+  printf '#!/usr/bin/env bash\nexit 0\n' > "$T/bin/dbus-update-activation-environment"
+  chmod +x "$T/bin/"*
+  HOME="$T/home" XINGUOS_SENTINELAS="$T" PATH="$T/bin:$PATH" run bash "$G/xinguos-steam-compativel"
+  echo "$output"
+  [ "$status" -eq 0 ]
+  grep -qx "steam -gamepadui -steamos3 MANGOHUD=1 CFG=/usr/share/xinguos/MangoHud.conf" "$LOG"
+  grep -qx "systemctl poweroff" "$LOG"
+}
+
+@test "Win+Shift+G registrado no kglobalaccel do Plasma 6" {
+  grep -q 'usr/share/kglobalaccel/org.xinguos.gaming.desktop' "$G/PKGBUILD"
+  grep -q '/usr/share/xinguos/MangoHud.conf' "$G/PKGBUILD"
+  grep -q '/usr/lib/xinguos/xinguos-steam-compativel' "$G/PKGBUILD"
 }
