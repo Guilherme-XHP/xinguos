@@ -41,4 +41,8 @@ XINGUOS_FOCO_DB=/tmp/f.db XINGUOS_FOCO_CONFIG=/tmp/foco.toml dbus-run-session --
   busctl --user call org.xinguos.Foco /org/xinguos/Foco org.xinguos.Foco Totais
   r=$?; kill $d; wait $d; exit $r' | tee /tmp/foco.txt
 grep -q '^s ' /tmp/foco.txt
+# instalador: o pacote existe e traz os módulos em Python (unpackfs, bootloader...)
+pacman -Sw --noconfirm calamares
+pacman -Qlp /var/cache/pacman/pkg/calamares-*.pkg.tar.zst | grep -q '/unpackfs/main.py$'
+pacman -Qlp /var/cache/pacman/pkg/calamares-*.pkg.tar.zst | grep -q '/bootloader/main.py$'
 echo "smoke-repo: ok"

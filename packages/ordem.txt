@@ -11,3 +11,4 @@ xinguos/kwin-scripts-krohnkite
 xinguos/xinguos-foco
 xinguos/xinguos-desktop
 xinguos/xinguos-apps
+aur/calamares
